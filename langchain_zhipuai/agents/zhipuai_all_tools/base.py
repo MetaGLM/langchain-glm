@@ -49,7 +49,7 @@ logger = logging.getLogger()
 def _is_assistants_builtin_tool(
     tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
 ) -> bool:
-    """解析这里的built-in"""
+    """platform tools built-in"""
     assistants_builtin_tools = (
         "code_interpreter",
     )
@@ -63,14 +63,14 @@ def _is_assistants_builtin_tool(
 def _get_assistants_tool(
     tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
 ) -> Dict[str, Any]:
-    """Convert a raw function/class to an OpenAI tool.
+    """Convert a raw function/class to an ZhipuAI tool.
 
-    Note that OpenAI assistants supports several built-in tools,
-    such as "code_interpreter" and "retrieval."
+    such as "code_interpreter"
     """
     if _is_assistants_builtin_tool(tool):
         return tool  # type: ignore
     else:
+        # in case of a custom tool, convert it to an function of type
         return convert_to_openai_tool(tool)
 
 

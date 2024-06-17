@@ -10,7 +10,7 @@ from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain.agents.format_scratchpad.openai_tools import (
     format_to_openai_tool_messages,
 )
-from langchain.agents.output_parsers.openai_tools import OpenAIToolsAgentOutputParser
+from langchain_zhipuai.agents.output_parsers import ZhipuAiALLToolsAgentOutputParser
 
 
 def create_zhipuai_tools_agent(
@@ -95,7 +95,7 @@ def create_zhipuai_tools_agent(
         )
         | prompt
         | llm_with_all_tools
-        | OpenAIToolsAgentOutputParser()
+        | ZhipuAiALLToolsAgentOutputParser()
     )
 
     return agent

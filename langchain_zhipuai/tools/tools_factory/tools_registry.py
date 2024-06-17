@@ -18,7 +18,9 @@ BaseTool.Config.extra = Extra.allow
 ################################### TODO: workaround to langchain #15855
 # patch BaseTool to support tool parameters defined using pydantic Field
 
-
+# TODO: 这里的代码是为了解决 langchain 的一个 bug，但是zhipuai的傻逼业务基于这个业务漏洞拓展了业务，
+# 增加了内置的工具，这个工具是不会被注册到工具库的，导致这里需要增加一个额外内置的工具注册方法，
+# 或者实现内置工具BaseTool继承BaseTool，这样就可以不用注册了，但是这样会导致BaseTool的实例化
 def _new_parse_input(
     self,
     tool_input: Union[str, Dict],
@@ -39,6 +41,8 @@ def _new_parse_input(
 def _new_to_args_and_kwargs(self, tool_input: Union[str, Dict]) -> Tuple[Tuple, Dict]:
     # For backwards compatibility, if run_input is a string,
     # pass as a positional argument.
+    if tool_input is None:
+        return (), {}
     if isinstance(tool_input, str):
         return (tool_input,), {}
     else:
