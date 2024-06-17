@@ -22,7 +22,7 @@ from typing import (
 
 import zhipuai
 from langchain import hub
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.agents import AgentExecutor
 from langchain.callbacks import AsyncIteratorCallbackHandler
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
 from langchain_core.callbacks import BaseCallbackHandler
@@ -30,9 +30,11 @@ from langchain_core.language_models import BaseLanguageModel
 from langchain_core.messages import AIMessage, HumanMessage, convert_to_messages
 from langchain_core.runnables import RunnableConfig, RunnableSerializable, ensure_config
 from langchain_core.tools import BaseTool
+from langchain_core.runnables.base import RunnableBindingBase
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from pydantic.v1 import BaseModel, Field
 
+from langchain_zhipuai.agents.all_tools_bind.base import create_zhipuai_tools_agent
 from langchain_zhipuai.callbacks.callback_handler.agent_callback_handler import (
     AgentExecutorAsyncIteratorCallbackHandler,
     AgentStatus,
@@ -50,7 +52,6 @@ def _is_assistants_builtin_tool(
     """解析这里的built-in"""
     assistants_builtin_tools = (
         "code_interpreter",
-        "retrieval",
     )
     return (
         isinstance(tool, dict)
@@ -75,12 +76,16 @@ def _get_assistants_tool(
 
 def _agents_registry(
     llm: BaseLanguageModel,
+    llm_with_all_tools: RunnableBindingBase = None,
     tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = [],
     callbacks: List[BaseCallbackHandler] = [],
     verbose: bool = False,
 ):
     prompt = hub.pull("hwchase17/openai-tools-agent")
-    agent = create_openai_tools_agent(llm=llm, tools=tools, prompt=prompt)
+    agent = create_zhipuai_tools_agent(
+        prompt=prompt,
+        llm_with_all_tools=llm_with_all_tools
+    )
 
     agent_executor = AgentExecutor(
         agent=agent, tools=tools, verbose=verbose, callbacks=callbacks
@@ -226,7 +231,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
         model_name: str,
         callback: AsyncIteratorCallbackHandler,
         *,
-        tools: Sequence[Union[BaseTool, dict]] = None,
+        tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = None,
         temperature: float = 0.7,
         **kwargs: Any,
     ) -> "ZhipuAIAllToolsRunnable":
@@ -244,13 +249,21 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
         llm = ChatZhipuAI(**params)
         all_tools = get_tool().values()
 
-        # 拼接all_tools和tools
+        llm_with_all_tools = None
         if tools:
-            all_tools = all_tools + tools
+            temp_tools = []
+            temp_tools.extend(tools)
+            temp_tools.extend(all_tools)
+            llm_with_all_tools = llm.bind(
+                tools=[_get_assistants_tool(tool) for tool in temp_tools]
+            )
 
         tools = [t.copy(update={"callbacks": callbacks}) for t in all_tools]
         agent_executor = _agents_registry(
-            llm=llm, callbacks=callbacks, tools=tools, verbose=True
+            llm=llm, callbacks=callbacks,
+            tools=tools,
+            llm_with_all_tools=llm_with_all_tools,
+            verbose=True
         )
         return cls(
             model_name=model_name,

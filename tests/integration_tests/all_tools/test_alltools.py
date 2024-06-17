@@ -27,7 +27,12 @@ async def test_all_tools(logging_conf):
     callback = AgentExecutorAsyncIteratorCallbackHandler()
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
-        model_name="chatglm3-qingyan-alltools-130b", callback=callback
+        model_name="chatglm3-qingyan-alltools-130b", callback=callback,
+        tools=[
+            {
+                "type": "code_interpreter"
+            }
+        ]
     )
     chat_input = AllToolsChatInput(
         query="""你好，帮我算下100*1，然后给我说下你用什么计算的"""
