@@ -8,22 +8,23 @@ from pydantic.v1 import BaseModel, Extra
 
 __all__ = ["regist_tool", "BaseToolOutput"]
 
-
 _TOOLS_REGISTRY = {}
-
 
 # patch BaseTool to support extra fields e.g. a title
 BaseTool.Config.extra = Extra.allow
 
+
 ################################### TODO: workaround to langchain #15855
 # patch BaseTool to support tool parameters defined using pydantic Field
 
-# TODO: 这里的代码是为了解决 langchain 的一个 bug，但是zhipuai的傻逼业务基于这个业务漏洞拓展了业务，
-# 增加了内置的工具，这个工具是不会被注册到工具库的，导致这里需要增加一个额外内置的工具注册方法，
-# 或者实现内置工具BaseTool继承BaseTool，这样就可以不用注册了，但是这样会导致BaseTool的实例化
+# TODO: The code here is designed to solve a bug in Langchain, \
+#       but “Zhipuai” foolish business has expanded its business based on this vulnerability,
+#       Added a built-in tool that will not be registered in the tool library, resulting in the need for an additional
+#       built-in tool registration method, Or implement the built-in tool BaseTool to inherit BaseTool,
+#       so that registration is not required, but this will result in the instantiation of BaseTool
 def _new_parse_input(
-    self,
-    tool_input: Union[str, Dict],
+        self,
+        tool_input: Union[str, Dict],
 ) -> Union[str, Dict[str, Any]]:
     """Convert tool input to pydantic model."""
     input_args = self.args_schema
@@ -65,16 +66,18 @@ def _new_to_args_and_kwargs(self, tool_input: Union[str, Dict]) -> Tuple[Tuple, 
 
 BaseTool._parse_input = _new_parse_input
 BaseTool._to_args_and_kwargs = _new_to_args_and_kwargs
+
+
 ###############################
 
 
 def regist_tool(
-    *args: Any,
-    title: str = "",
-    description: str = "",
-    return_direct: bool = False,
-    args_schema: Optional[Type[BaseModel]] = None,
-    infer_schema: bool = True,
+        *args: Any,
+        title: str = "",
+        description: str = "",
+        return_direct: bool = False,
+        args_schema: Optional[Type[BaseModel]] = None,
+        infer_schema: bool = True,
 ) -> Union[Callable, BaseTool]:
     """
     wrapper of langchain tool decorator
@@ -131,11 +134,11 @@ class BaseToolOutput:
     """
 
     def __init__(
-        self,
-        data: Any,
-        format: str = "",
-        data_alias: str = "",
-        **extras: Any,
+            self,
+            data: Any,
+            format: str = "",
+            data_alias: str = "",
+            **extras: Any,
     ) -> None:
         self.data = data
         self.format = format
