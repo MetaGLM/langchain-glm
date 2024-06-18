@@ -13,6 +13,8 @@ from langchain_core.outputs import ChatGeneration, Generation
 
 from langchain.agents.agent import MultiActionAgentOutputParser
 
+from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk
+
 
 class ToolAgentAction(AgentActionMessageLog):
     tool_call_id: str
@@ -87,6 +89,16 @@ def parse_ai_message_to_tool_action(
         content_msg = f"responded: {message.content}\n" if message.content else "\n"
         log = f"\nInvoking: `{function_name}` with `{tool_input}`\n{content_msg}\n"
         if 'code_interpreter' in function_name:
+            tool_calls_chunks = []
+            if isinstance(message, ALLToolsMessageChunk):
+                # unpack message.tool_calls_chunks
+                tool_calls_chunks = message.tool_call_chunks
+            log_chunk = [json.loads(tool_chunk['args'])['input']
+                         for tool_chunk in tool_calls_chunks
+                         if 'input' in json.loads(tool_chunk['args'])]
+            outputs = tool_input.get('outputs',[])
+            out_logs = [logs['logs'] for logs in outputs if 'logs' in logs]
+            log = f"{''.join(log_chunk)}\n{''.join(out_logs)}\n"
             actions.append(
                 CodeInterpreterAgentAction(
                     tool=function_name,

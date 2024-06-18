@@ -131,7 +131,8 @@ class AllToolsAction(BaseModel):
         result = {
             "run_id": self.run_id,
             "status": self.status,
-            "return_values": self.return_values,
+            "tool": self.tool,
+            "tool_input": self.tool_input,
             "log": self.log,
         }
 
@@ -368,6 +369,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                         status=data["status"],
                         text=data["text"],
                     )
+                    self._message_data[data["run_id"]] = class_status
                 elif data["status"] == AgentStatus.agent_action:
                     class_status = AllToolsAction(
                         run_id=data["run_id"],
@@ -394,8 +396,10 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                 elif data["status"] == AgentStatus.agent_finish:
                     class_status = AllToolsFinish(
                         run_id=data["run_id"],
+                        status=data["status"],
                         **data["finish"],
                     )
+                    self._call_data[data["run_id"]] = class_status
 
                 yield class_status
 
