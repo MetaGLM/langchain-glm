@@ -41,27 +41,28 @@ from langchain_zhipuai.callbacks.callback_handler.agent_callback_handler import 
 )
 from langchain_zhipuai.chat_models import ChatZhipuAI
 from langchain_zhipuai.tools import get_tool
+from langchain_zhipuai.tools.tools import _aperform_agent_action, _perform_agent_action
 from langchain_zhipuai.utils import History
 
 logger = logging.getLogger()
 
 
 def _is_assistants_builtin_tool(
-    tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
+        tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
 ) -> bool:
     """platform tools built-in"""
     assistants_builtin_tools = (
         "code_interpreter",
     )
     return (
-        isinstance(tool, dict)
-        and ("type" in tool)
-        and (tool["type"] in assistants_builtin_tools)
+            isinstance(tool, dict)
+            and ("type" in tool)
+            and (tool["type"] in assistants_builtin_tools)
     )
 
 
 def _get_assistants_tool(
-    tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
+        tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
 ) -> Dict[str, Any]:
     """Convert a raw function/class to an ZhipuAI tool.
 
@@ -75,18 +76,19 @@ def _get_assistants_tool(
 
 
 def _agents_registry(
-    llm: BaseLanguageModel,
-    llm_with_all_tools: RunnableBindingBase = None,
-    tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = [],
-    callbacks: List[BaseCallbackHandler] = [],
-    verbose: bool = False,
+        llm: BaseLanguageModel,
+        llm_with_all_tools: RunnableBindingBase = None,
+        tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = [],
+        callbacks: List[BaseCallbackHandler] = [],
+        verbose: bool = False,
 ):
     prompt = hub.pull("hwchase17/openai-tools-agent")
     agent = create_zhipuai_tools_agent(
         prompt=prompt,
         llm_with_all_tools=llm_with_all_tools
     )
-
+    AgentExecutor._aperform_agent_action = _aperform_agent_action
+    AgentExecutor._perform_agent_action = _perform_agent_action
     agent_executor = AgentExecutor(
         agent=agent, tools=tools, verbose=verbose, callbacks=callbacks
     )
@@ -113,58 +115,106 @@ async def wrap_done(fn: Awaitable, event: asyncio.Event):
         event.set()
 
 
-class AllToolsAction(AgentAction):
+class AllToolsAction(BaseModel):
     """AgentFinish with run and thread metadata."""
 
     run_id: str
-
-    @classmethod
-    def is_lc_serializable(cls) -> bool:
-        return True
+    status: int  # AgentStatus
+    tool: str
+    tool_input: str
+    log: str
 
     class Config:
         arbitrary_types_allowed = True
 
+    def model_dump(self) -> dict:
+        result = {
+            "run_id": self.run_id,
+            "status": self.status,
+            "return_values": self.return_values,
+            "log": self.log,
+        }
 
-class AllToolsFinish(AgentFinish):
+        return result
+
+    def model_dump_json(self):
+        return json.dumps(self.model_dump(), ensure_ascii=False)
+
+
+class AllToolsFinish(BaseModel):
     """AgentFinish with run and thread metadata."""
 
     run_id: str
-
-    @classmethod
-    def is_lc_serializable(cls) -> bool:
-        return True
+    status: int  # AgentStatus
+    return_values: dict
+    log: str
 
     class Config:
         arbitrary_types_allowed = True
 
+    def model_dump(self) -> dict:
+        result = {
+            "run_id": self.run_id,
+            "status": self.status,
+            "return_values": self.return_values,
+            "log": self.log,
+        }
 
-class AllToolsActionToolStart(AgentAction):
+        return result
+
+    def model_dump_json(self):
+        return json.dumps(self.model_dump(), ensure_ascii=False)
+
+
+class AllToolsActionToolStart(BaseModel):
     """AllToolsAction with run and thread metadata."""
 
-    run_id: Optional[str] = None
-
-    @classmethod
-    def is_lc_serializable(cls) -> bool:
-        return True
+    run_id: str
+    status: int  # AgentStatus
+    tool: str
+    tool_input: Optional[str] = None
 
     class Config:
         arbitrary_types_allowed = True
 
+    def model_dump(self) -> dict:
+        result = {
+            "run_id": self.run_id,
+            "status": self.status,
+            "tool": self.tool,
+            "tool_input": self.tool_input,
+        }
 
-class AllToolsActionToolEnd(AgentAction):
+        return result
+
+    def model_dump_json(self):
+        return json.dumps(self.model_dump(), ensure_ascii=False)
+
+
+class AllToolsActionToolEnd(BaseModel):
     """AllToolsActionEnd with run and thread metadata."""
 
     run_id: str
-    is_error: bool
-    tool_output: str
 
-    @classmethod
-    def is_lc_serializable(cls) -> bool:
-        return True
+    status: int  # AgentStatus
+    tool: str
+    tool_output: str
 
     class Config:
         arbitrary_types_allowed = True
+
+    def model_dump(self) -> dict:
+        result = {
+            "run_id": self.run_id,
+            "status": self.status,
+            "tool": self.tool,
+            "tool_output": self.tool_output,
+        }
+
+        return result
+
+    def model_dump_json(self):
+        return json.dumps(self.model_dump(), ensure_ascii=False)
 
 
 class AllToolsLLMStatus(BaseModel):
@@ -227,13 +277,13 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
 
     @classmethod
     def create_agent_executor(
-        cls,
-        model_name: str,
-        callback: AsyncIteratorCallbackHandler,
-        *,
-        tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = None,
-        temperature: float = 0.7,
-        **kwargs: Any,
+            cls,
+            model_name: str,
+            callback: AsyncIteratorCallbackHandler,
+            *,
+            tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = None,
+            temperature: float = 0.7,
+            **kwargs: Any,
     ) -> "ZhipuAIAllToolsRunnable":
         """Create an ZhipuAI Assistant and instantiate the Runnable."""
         callbacks = [callback]
@@ -273,7 +323,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
         )
 
     def invoke(
-        self, chat_input: AllToolsChatInput, config: Optional[RunnableConfig] = None
+            self, chat_input: AllToolsChatInput, config: Optional[RunnableConfig] = None
     ) -> AsyncIterable[OutputType]:
         async def chat_iterator() -> AsyncIterable[OutputType]:
             history_message = []
@@ -320,28 +370,26 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                     )
                 elif data["status"] == AgentStatus.agent_action:
                     class_status = AllToolsAction(
-                        run_id=data["run_id"], **data["action"]
+                        run_id=data["run_id"],
+                        status=data["status"],
+                        **data["action"]
                     )
-                    self._call_data[data["run_id"]] = class_status
 
                 elif data["status"] == AgentStatus.tool_start:
                     class_status = AllToolsActionToolStart(
                         run_id=data["run_id"],
+                        status=data["status"],
                         tool_input=data["tool_input"],
                         tool=data["tool"],
-                        log=data["tool"],
                     )
-                    self._call_data[data["run_id"]] = class_status
 
                 elif data["status"] in [AgentStatus.tool_end]:
-                    last_status: AllToolsAction = self._call_data[data["run_id"]]
                     class_status = AllToolsActionToolEnd(
+
                         run_id=data["run_id"],
-                        tool_input=last_status.tool_input,
-                        tool=last_status.tool,
-                        log=last_status.log,
+                        status=data["status"],
+                        tool=data["tool"],
                         tool_output=data["tool_output"],
-                        is_error=data.get("is_error", False),
                     )
                 elif data["status"] == AgentStatus.agent_finish:
                     class_status = AllToolsFinish(

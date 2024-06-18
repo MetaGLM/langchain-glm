@@ -4,7 +4,7 @@
 import requests
 from pydantic.v1 import Field
 
-from .tools_registry import BaseToolOutput, regist_tool
+from langchain_zhipuai.tools.tools_registry import BaseToolOutput, regist_tool
 
 
 @regist_tool(title="天气查询")

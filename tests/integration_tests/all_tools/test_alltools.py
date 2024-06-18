@@ -35,21 +35,21 @@ async def test_all_tools(logging_conf):
         ]
     )
     chat_input = AllToolsChatInput(
-        query="""你好，帮我算下100*1，然后给我说下你用什么计算的"""
+        query="""你好，帮我算下100*1，然后给我说下你用什么计算的,给我代码"""
     )
     chat_iterator = agent_executor.invoke(chat_input=chat_input)
     async for item in chat_iterator:
         if isinstance(item, AllToolsAction):
-            print("AllToolsAction:" + str(item.to_json()))
+            print("AllToolsAction:" + str(item.model_dump_json()))
 
         elif isinstance(item, AllToolsFinish):
-            print("AllToolsFinish:" + str(item.to_json()))
+            print("AllToolsFinish:" + str(item.model_dump_json()))
 
         elif isinstance(item, AllToolsActionToolStart):
-            print("AllToolsActionEnd:" + str(item.to_json()))
+            print("AllToolsActionToolStart:" + str(item.model_dump_json()))
 
         elif isinstance(item, AllToolsActionToolEnd):
-            print("AllToolsActionToolEnd:" + str(item.to_json()))
+            print("AllToolsActionToolEnd:" + str(item.model_dump_json()))
         elif isinstance(item, AllToolsLLMStatus):
             if item.status == AgentStatus.llm_end:
                 print("llm_end:" + item.text)

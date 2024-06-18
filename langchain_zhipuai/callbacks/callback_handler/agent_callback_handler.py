@@ -131,6 +131,7 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
         data = {
             "run_id": str(run_id),
             "status": AgentStatus.tool_end,
+            "tool": kwargs['name'],
             "tool_output": output,
         }
         self.queue.put_nowait(dumps(data))

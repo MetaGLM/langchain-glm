@@ -4,6 +4,6 @@ from langchain.tools import BaseTool
 
 
 def get_tool() -> Union[Dict[str, BaseTool]]:
-    from .tools_factory import tools_registry
+    from langchain_zhipuai.tools import tools_registry
 
     return tools_registry._TOOLS_REGISTRY

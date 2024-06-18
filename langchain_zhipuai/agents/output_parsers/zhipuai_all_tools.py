@@ -51,7 +51,7 @@ class ZhipuAiALLToolsAgentOutputParser(MultiActionAgentOutputParser):
 
     @property
     def _type(self) -> str:
-        return "openai-tools-agent-output-parser"
+        return "zhipuai-all-tools-agent-output-parser"
 
     def parse_result(
         self, result: List[Generation], *, partial: bool = False

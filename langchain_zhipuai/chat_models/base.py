@@ -64,6 +64,8 @@ from langchain_core.utils.function_calling import (
 )
 from langchain_core.utils.utils import build_extra_kwargs
 
+from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk
+
 logger = logging.getLogger(__name__)
 
 
@@ -169,6 +171,8 @@ def _convert_delta_to_message_chunk(
 
     if role == "user" or default_class == HumanMessageChunk:
         return HumanMessageChunk(content=content)
+    elif default_class == ALLToolsMessageChunk:
+        return ALLToolsMessageChunk(content=content, additional_kwargs=additional_kwargs)
     elif role == "assistant" or default_class == AIMessageChunk:
         return AIMessageChunk(content=content, additional_kwargs=additional_kwargs)
     elif role == "system" or default_class == SystemMessageChunk:
@@ -451,6 +455,10 @@ class ChatZhipuAI(BaseChatModel):
             if len(chunk["choices"]) == 0:
                 continue
             choice = chunk["choices"][0]
+            # all_tools chunk load action exec parse tool
+            if params['model'] in ['chatglm3-qingyan-alltools-130b','glm-4-alltools']:
+                default_chunk_class = ALLToolsMessageChunk
+
             chunk = _convert_delta_to_message_chunk(
                 choice["delta"], default_chunk_class
             )

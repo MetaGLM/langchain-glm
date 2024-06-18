@@ -14,31 +14,6 @@ _TOOLS_REGISTRY = {}
 BaseTool.Config.extra = Extra.allow
 
 
-################################### TODO: workaround to langchain #15855
-# patch BaseTool to support tool parameters defined using pydantic Field
-
-# TODO: The code here is designed to solve a bug in Langchain, \
-#       but “Zhipuai” foolish business has expanded its business based on this vulnerability,
-#       Added a built-in tool that will not be registered in the tool library, resulting in the need for an additional
-#       built-in tool registration method, Or implement the built-in tool BaseTool to inherit BaseTool,
-#       so that registration is not required, but this will result in the instantiation of BaseTool
-def _new_parse_input(
-        self,
-        tool_input: Union[str, Dict],
-) -> Union[str, Dict[str, Any]]:
-    """Convert tool input to pydantic model."""
-    input_args = self.args_schema
-    if isinstance(tool_input, str):
-        if input_args is not None:
-            key_ = next(iter(input_args.__fields__.keys()))
-            input_args.validate({key_: tool_input})
-        return tool_input
-    else:
-        if input_args is not None:
-            result = input_args.parse_obj(tool_input)
-            return result.dict()
-
-
 def _new_to_args_and_kwargs(self, tool_input: Union[str, Dict]) -> Tuple[Tuple, Dict]:
     # For backwards compatibility, if run_input is a string,
     # pass as a positional argument.
@@ -64,11 +39,7 @@ def _new_to_args_and_kwargs(self, tool_input: Union[str, Dict]) -> Tuple[Tuple, 
         return (), tool_input
 
 
-BaseTool._parse_input = _new_parse_input
 BaseTool._to_args_and_kwargs = _new_to_args_and_kwargs
-
-
-###############################
 
 
 def regist_tool(
