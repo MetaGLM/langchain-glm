@@ -12,14 +12,12 @@ from langchain_core.messages import (
 
 from langchain.agents.output_parsers.tools import ToolAgentAction
 
-
 from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk
 
 
 class CodeInterpreterAgentAction(ToolAgentAction):
     outputs: List[Union[str, dict]] = None
     """Output of the tool call."""
-
 
 
 def parse_ai_message_to_tool_action(
@@ -40,7 +38,8 @@ def parse_ai_message_to_tool_action(
         # Best-effort parsing allready parsed tool calls
         # TODO: parse platform tools built-in @langchain_zhipuai.agents.zhipuai_all_tools.base._get_assistants_tool
         #   type in the future "function" or "code_interpreter"
-        #   for @ToolAgentAction from langchain.agents.output_parsers.tools import with langchain.agents.format_scratchpad.tools.format_to_tool_messages
+        #   for @ToolAgentAction from langchain.agents.output_parsers.tools
+        #   import with langchain.agents.format_scratchpad.tools.format_to_tool_messages
         tool_calls = []
         for tool_call in message.additional_kwargs["tool_calls"]:
             if 'function' in tool_call['type']:
@@ -92,14 +91,14 @@ def parse_ai_message_to_tool_action(
             log_chunk = [json.loads(tool_chunk['args'])['input']
                          for tool_chunk in tool_calls_chunks
                          if 'input' in json.loads(tool_chunk['args'])]
-            outputs = tool_input.get('outputs',[])
+            outputs = tool_input.get('outputs', [])
             out_logs = [logs['logs'] for logs in outputs if 'logs' in logs]
             log = f"{''.join(log_chunk)}\n{''.join(out_logs)}\n"
             actions.append(
                 CodeInterpreterAgentAction(
                     tool=function_name,
                     tool_input=tool_input.get('input', ""),
-                    tool_output=tool_input.get('outputs',[]),
+                    tool_output=tool_input.get('outputs', []),
                     log=log,
                     message_log=[message],
                     tool_call_id=tool_call["id"] if tool_call["id"] else "abc",
@@ -116,4 +115,3 @@ def parse_ai_message_to_tool_action(
                 )
             )
     return actions
-
