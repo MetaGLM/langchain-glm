@@ -1,6 +1,7 @@
 from typing import Dict, Union
 
 from langchain.tools import BaseTool
+import langchain_zhipuai.tools.tools_factory
 
 
 def get_tool() -> Union[Dict[str, BaseTool]]:

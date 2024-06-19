@@ -28,14 +28,14 @@ async def test_all_tools(logging_conf):
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
         model_name="chatglm3-qingyan-alltools-130b", callback=callback,
-        tools=[
-            {
-                "type": "code_interpreter"
-            }
-        ]
+        # tools=[
+        #     {
+        #         "type": "code_interpreter"
+        #     }
+        # ]
     )
     chat_input = AllToolsChatInput(
-        query="""你好，帮我算下100*1，然后给我说下你用什么计算的,给我代码"""
+        query="""看下本地文件有哪些，告诉我你用的是什么文件,查看当前目录"""
     )
     chat_iterator = agent_executor.invoke(chat_input=chat_input)
     async for item in chat_iterator:

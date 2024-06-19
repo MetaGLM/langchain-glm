@@ -121,7 +121,7 @@ class AllToolsAction(BaseModel):
     run_id: str
     status: int  # AgentStatus
     tool: str
-    tool_input: str
+    tool_input: Any
     log: str
 
     class Config:
@@ -308,7 +308,10 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
             llm_with_all_tools = llm.bind(
                 tools=[_get_assistants_tool(tool) for tool in temp_tools]
             )
-
+        else:
+            llm_with_all_tools = llm.bind(
+                tools=[_get_assistants_tool(tool) for tool in all_tools]
+            )
         tools = [t.copy(update={"callbacks": callbacks}) for t in all_tools]
         agent_executor = _agents_registry(
             llm=llm, callbacks=callbacks,
