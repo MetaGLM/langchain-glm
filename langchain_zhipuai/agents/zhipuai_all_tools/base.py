@@ -17,7 +17,7 @@ from typing import (
     Sequence,
     Tuple,
     Type,
-    Union,
+    Union, Iterable,
 )
 
 import zhipuai
@@ -242,8 +242,6 @@ class AllToolsLLMStatus(BaseModel):
         return json.dumps(self.model_dump(), ensure_ascii=False)
 
 
-
-
 OutputType = Union[
     AllToolsAction,
     AllToolsActionToolStart,
@@ -270,6 +268,10 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
 
     class Config:
         arbitrary_types_allowed = True
+
+    def __init__(self, /, **data: Any):
+
+        super().__init__(**data)
 
     @classmethod
     def create_agent_executor(
@@ -322,9 +324,27 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
             **kwargs,
         )
 
-    def invoke(
-            self, chat_input: str, config: Optional[RunnableConfig] = None
-    ) -> AsyncIterable[OutputType]:
+    def invoke(self, chat_input: str, config: Optional[RunnableConfig] = None) -> AsyncIterable[OutputType]:
+        #     loop = asyncio.new_event_loop()
+        #     asyncio.set_event_loop(loop)
+        #     async_gen = self.chat(chat_input)
+        #
+        #     try:
+        #         result = loop.run_until_complete(self.collect_results(async_gen))
+        #     finally:
+        #         loop.close()
+        #
+        #     for status in result:
+        #         yield status
+        #
+        # async def collect_results(self, async_gen: AsyncIterable[OutputType]) -> list[OutputType]:
+        #     results = []
+        #     async for item in async_gen:
+        #         results.append(item)
+        #     return results
+        #
+        # async def chat(self, chat_input: str):
+
         async def chat_iterator() -> AsyncIterable[OutputType]:
             history_message = []
             if self.history:
@@ -407,18 +427,38 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                         text=data["outputs"]['output'],
                     )
 
+                elif data["status"] == AgentStatus.error:
+                    class_status = AllToolsLLMStatus(
+                        run_id=data["run_id"],
+                        status=data["status"],
+                        text=data["outputs"]['output'],
+                    )
+                elif data["status"] == AgentStatus.chain_start:
+                    class_status = AllToolsLLMStatus(
+                        run_id=data["run_id"],
+                        status=data["status"],
+                        text="",
+                    )
+                elif data["status"] == AgentStatus.chain_end:
+                    class_status = AllToolsLLMStatus(
+                        run_id=data["run_id"],
+                        status=data["status"],
+                        text=data["outputs"]['output'],
+                    )
+
                 yield class_status
 
             await task
 
-            self.history.append({
-                "role": "user",
-                "content": chat_input
-            })
-            self.history.append({
-                "role": "assistant",
-                "content": self.callback.outputs['output']
-            })
-            self.intermediate_steps.extend(self.callback.intermediate_steps)
+            if self.callback.out:
+                self.history.append({
+                    "role": "user",
+                    "content": chat_input
+                })
+                self.history.append({
+                    "role": "assistant",
+                    "content": self.callback.outputs['output']
+                })
+                self.intermediate_steps.extend(self.callback.intermediate_steps)
 
         return chat_iterator()

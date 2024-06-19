@@ -9,6 +9,8 @@ from langchain.callbacks import AsyncIteratorCallbackHandler
 from langchain.schema import AgentAction, AgentFinish
 from langchain_core.outputs import LLMResult
 
+from langchain_zhipuai.utils import History
+
 
 def dumps(obj: Dict) -> str:
     return json.dumps(obj, ensure_ascii=False)
@@ -43,6 +45,7 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
             "status": AgentStatus.llm_start,
             "text": "",
         }
+        self.out = False
         self.done.clear()
         self.queue.put_nowait(dumps(data))
 
@@ -92,7 +95,9 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
             "status": AgentStatus.llm_end,
             "text": response.generations[0][0].message.content,
         }
+
         self.queue.put_nowait(dumps(data))
+
 
     async def on_llm_error(
             self, error: Exception | KeyboardInterrupt, **kwargs: Any
@@ -120,6 +125,7 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
             "tool": serialized["name"],
             "tool_input": input_str,
         }
+        self.done.clear()
         self.queue.put_nowait(dumps(data))
 
     async def on_tool_end(
@@ -140,6 +146,7 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
         }
         self.queue.put_nowait(dumps(data))
 
+
     async def on_tool_error(
             self,
             error: BaseException,
@@ -152,12 +159,13 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
         """Run when tool errors."""
         data = {
             "run_id": str(run_id),
-            "status": AgentStatus.tool_end,
+            "status": AgentStatus.error,
             "tool_output": str(error),
             "is_error": True,
         }
 
         self.queue.put_nowait(dumps(data))
+
 
     async def on_agent_action(
             self,
@@ -201,7 +209,9 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
                 "log": finish.log,
             },
         }
+
         self.queue.put_nowait(dumps(data))
+
 
     async def on_chain_start(
             self,
@@ -217,6 +227,9 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
         """Run when chain starts running."""
         if 'agent_scratchpad' in inputs:
             del inputs['agent_scratchpad']
+        if 'chat_history' in inputs:
+            inputs['chat_history'] = [History.from_message(message).to_msg_tuple() for message in
+                                      inputs['chat_history']]
         data = {
             "run_id": str(run_id),
             "status": AgentStatus.chain_start,
@@ -224,6 +237,26 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
             "parent_run_id": parent_run_id,
             "tags": tags,
             "metadata": metadata,
+        }
+
+        self.done.clear()
+        self.out = False
+        self.queue.put_nowait(dumps(data))
+
+    async def on_chain_error(
+            self,
+            error: BaseException,
+            *,
+            run_id: UUID,
+            parent_run_id: Optional[UUID] = None,
+            tags: Optional[List[str]] = None,
+            **kwargs: Any,
+    ) -> None:
+        """Run when chain errors."""
+        data = {
+            "run_id": str(run_id),
+            "status": AgentStatus.error,
+            "error": str(error),
         }
         self.queue.put_nowait(dumps(data))
 
@@ -249,5 +282,4 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
         }
         self.queue.put_nowait(dumps(data))
 
-        self.done.set()
         self.out = True
