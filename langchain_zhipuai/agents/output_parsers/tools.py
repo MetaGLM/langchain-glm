@@ -9,16 +9,11 @@ from langchain_core.messages import (
     BaseMessage,
     ToolCall,
 )
-from langchain_core.outputs import ChatGeneration, Generation
 
-from langchain.agents.agent import MultiActionAgentOutputParser
+from langchain.agents.output_parsers.tools import ToolAgentAction
+
 
 from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk
-
-
-class ToolAgentAction(AgentActionMessageLog):
-    tool_call_id: str
-    """Tool call that this message is responding to."""
 
 
 class CodeInterpreterAgentAction(ToolAgentAction):
@@ -44,7 +39,8 @@ def parse_ai_message_to_tool_action(
             )
         # Best-effort parsing allready parsed tool calls
         # TODO: parse platform tools built-in @langchain_zhipuai.agents.zhipuai_all_tools.base._get_assistants_tool
-        # type in the future "function" or "code_interpreter"
+        #   type in the future "function" or "code_interpreter"
+        #   for @ToolAgentAction from langchain.agents.output_parsers.tools import with langchain.agents.format_scratchpad.tools.format_to_tool_messages
         tool_calls = []
         for tool_call in message.additional_kwargs["tool_calls"]:
             if 'function' in tool_call['type']:
