@@ -23,7 +23,9 @@ from typing import (
 import zhipuai
 from langchain import hub
 from langchain.agents import AgentExecutor
-from langchain.callbacks import AsyncIteratorCallbackHandler
+from langchain.agents.format_scratchpad.openai_tools import (
+    format_to_openai_tool_messages,
+)
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
@@ -90,7 +92,7 @@ def _agents_registry(
     AgentExecutor._aperform_agent_action = _aperform_agent_action
     AgentExecutor._perform_agent_action = _perform_agent_action
     agent_executor = AgentExecutor(
-        agent=agent, tools=tools, verbose=verbose, callbacks=callbacks
+        agent=agent, tools=tools, verbose=verbose, callbacks=callbacks, return_intermediate_steps=True
     )
 
     return agent_executor
@@ -240,13 +242,6 @@ class AllToolsLLMStatus(BaseModel):
         return json.dumps(self.model_dump(), ensure_ascii=False)
 
 
-class AllToolsChatInput(BaseModel):
-    id: Optional[str] = None
-    query: Optional[str] = None
-    history: Optional[List[History]] = None
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 OutputType = Union[
@@ -264,14 +259,14 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
 
     model_name: str = Field(default="chatglm3-qingyan-alltools-130b")
     """工具模型"""
-    callback: AsyncIteratorCallbackHandler
+    callback: AgentExecutorAsyncIteratorCallbackHandler
     """ZhipuAI AgentExecutor callback."""
     check_every_ms: float = 1_000.0
     """Frequency with which to check run progress in ms."""
-    _call_data: Dict[str, Any] = {}
-    """_call_data to store the data to be processed."""
-    _message_data: Dict[str, Any] = {}
-    """_message_data to store the data to be processed."""
+    intermediate_steps: List[Tuple[AgentAction, str]] = []
+    """intermediate_steps to store the data to be processed."""
+    history: List[Union[List, Tuple, Dict]] = []
+    """user message history"""
 
     class Config:
         arbitrary_types_allowed = True
@@ -280,13 +275,14 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
     def create_agent_executor(
             cls,
             model_name: str,
-            callback: AsyncIteratorCallbackHandler,
             *,
             tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = None,
             temperature: float = 0.7,
             **kwargs: Any,
     ) -> "ZhipuAIAllToolsRunnable":
         """Create an ZhipuAI Assistant and instantiate the Runnable."""
+
+        callback = AgentExecutorAsyncIteratorCallbackHandler()
         callbacks = [callback]
         params = dict(
             streaming=True,
@@ -327,12 +323,12 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
         )
 
     def invoke(
-            self, chat_input: AllToolsChatInput, config: Optional[RunnableConfig] = None
+            self, chat_input: str, config: Optional[RunnableConfig] = None
     ) -> AsyncIterable[OutputType]:
         async def chat_iterator() -> AsyncIterable[OutputType]:
             history_message = []
-            if chat_input.history:
-                _history = [History.from_data(h) for h in chat_input.history]
+            if self.history:
+                _history = [History.from_data(h) for h in self.history]
                 chat_history = [h.to_msg_tuple() for h in _history]
 
                 history_message = convert_to_messages(chat_history)
@@ -341,8 +337,11 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                 wrap_done(
                     self.agent_executor.ainvoke(
                         {
-                            "input": chat_input.query,
+                            "input": chat_input,
                             "chat_history": history_message,
+                            "agent_scratchpad": lambda x: format_to_openai_tool_messages(
+                                self.intermediate_steps
+                            )
                         }
                     ),
                     self.callback.done,
@@ -358,7 +357,6 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                         status=data["status"],
                         text=data["text"],
                     )
-                    self._message_data[data["run_id"]] = class_status
 
                 elif data["status"] == AgentStatus.llm_new_token:
                     class_status = AllToolsLLMStatus(
@@ -372,7 +370,6 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                         status=data["status"],
                         text=data["text"],
                     )
-                    self._message_data[data["run_id"]] = class_status
                 elif data["status"] == AgentStatus.agent_action:
                     class_status = AllToolsAction(
                         run_id=data["run_id"],
@@ -402,10 +399,26 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                         status=data["status"],
                         **data["finish"],
                     )
-                    self._call_data[data["run_id"]] = class_status
+
+                elif data["status"] == AgentStatus.agent_finish:
+                    class_status = AllToolsLLMStatus(
+                        run_id=data["run_id"],
+                        status=data["status"],
+                        text=data["outputs"]['output'],
+                    )
 
                 yield class_status
 
             await task
+
+            self.history.append({
+                "role": "user",
+                "content": chat_input
+            })
+            self.history.append({
+                "role": "assistant",
+                "content": self.callback.outputs['output']
+            })
+            self.intermediate_steps.extend(self.callback.intermediate_steps)
 
         return chat_iterator()
