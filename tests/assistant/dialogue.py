@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 import uuid
 import json
-from typing import List, Dict, AsyncIterable, AsyncIterator, Optional
+from typing import List, Dict, AsyncIterable, AsyncIterator, Optional, cast, TypeVar, Type
 from langchain_core.runnables.utils import (
     AddableDict,
     AnyConfigurableField,
@@ -41,8 +41,6 @@ from langchain_core.runnables.config import (
 )
 from langchain_core.utils.aiter import atee, py_anext
 from langchain_core.utils.iter import safetee
-import base64
-from io import BytesIO
 
 import nest_asyncio
 import streamlit as st
@@ -53,50 +51,15 @@ from streamlit_extras.bottom_container import bottom
 from langchain_zhipuai.agents.zhipuai_all_tools.base import AllToolsAction, AllToolsActionToolStart, AllToolsFinish, \
     AllToolsActionToolEnd, AllToolsLLMStatus, ZhipuAIAllToolsRunnable
 from langchain_zhipuai.callbacks.callback_handler.agent_callback_handler import AgentStatus
-from tests.assistant.call_collector import IteratorCallbackHandler, collect_results
 
 from tests.assistant.client import ZhipuAIPluginsClient
-from tests.assistant.utils import run_sync
+from tests.assistant.utils import get_img_base64
+from zhipuai.core._base_models import construct_type
 
-
-def get_img_base64(file_name: str) -> str:
-    '''
-    get_img_base64 used in streamlit.
-    absolute local path not working on windows.
-    '''
-    # 读取图片
-    with open(file_name, "rb") as f:
-        buffer = BytesIO(f.read())
-        base_str = base64.b64encode(buffer.getvalue()).decode()
-    return f"data:image/png;base64,{base_str}"
-
-
-st.set_page_config(
-    "assistant",
-    get_img_base64("chatchat_icon_blue_square_v2.png"),
-    initial_sidebar_state="expanded",
-    menu_items={
-    },
-    layout="wide"
+OutputType = TypeVar(
+    "OutputType",
+    bound="Union[AllToolsAction,AllToolsActionToolStart,AllToolsActionToolEnd,AllToolsFinish,AllToolsLLMStatus]",
 )
-
-# use the following code to set the app to wide mode and the html markdown to increase the sidebar width
-st.markdown(
-    """
-    <style>
-    [data-testid="stSidebarUserContent"] {
-        padding-top: 20px;
-    }
-    .block-container {
-        padding-top: 25px;
-    }
-    [data-testid="stBottomBlockContainer"] {
-        padding-bottom: 20px;
-    }
-    """,
-    unsafe_allow_html=True,
-)
-
 chat_box = ChatBox(
     assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2.png")
 )
@@ -120,7 +83,7 @@ def rerun():
     st.rerun()
 
 
-def get_messages_history(history_len: int, content_in_expander: bool = False) -> List[Dict]:
+def get_messages_history(history_len: int = 10, content_in_expander: bool = False) -> List[Dict]:
     """
     返回消息历史。
     content_in_expander控制是否返回expander元素中的内容，一般导出的时候可以选上，传入LLM的history不需要
@@ -180,17 +143,12 @@ def list_tools():
     return {}
 
 
-DEFULT_LLM = "chatglm3-qingyan-alltools-130b"
-HISTORY_LEN = 10
-
-
-async def dialogue_page(
+def dialogue_page(
         client: ZhipuAIPluginsClient
 ):
     ctx = chat_box.context
     ctx.setdefault("uid", uuid.uuid4().hex)
     ctx.setdefault("file_chat_id", None)
-    ctx.setdefault("llm_model", DEFULT_LLM)
     ctx.setdefault("temperature", "0.7")
     st.session_state.setdefault("cur_conv_name", chat_box.cur_chat_name)
     st.session_state.setdefault("last_conv_name", chat_box.cur_chat_name)
@@ -243,9 +201,7 @@ async def dialogue_page(
         cols = st.columns([1, 1, 15])
         prompt = cols[2].chat_input(chat_input_placeholder, key="prompt")
     if prompt:
-        history = get_messages_history(
-            HISTORY_LEN
-        )
+        history = get_messages_history()
         chat_box.user_say(prompt)
 
         chat_box.ai_say("正在思考...")
@@ -258,14 +214,20 @@ async def dialogue_page(
         }
 
         for item in client.chat(query=prompt, history=history):
-            chat_box.update_msg("", streaming=False)
-            if isinstance(item, AllToolsAction):
-                chat_box.insert_msg(f"正在解读{item.tool}工具输出结果...")
+            if 'AllToolsAction' == item['class_name']:
 
-            elif isinstance(item, AllToolsFinish):
-                chat_box.insert_msg(item.log.replace("\n", "\n\n"))
+                cast_type: Type[OutputType] = AllToolsAction
+                item = cast(OutputType, construct_type(type_=cast_type, value=item))
+                chat_box.update_msg(f"正在解读{item.tool}工具输出结果...")
 
-            elif isinstance(item, AllToolsActionToolStart):
+            elif 'AllToolsFinish' == item['class_name']:
+                cast_type: Type[OutputType] = AllToolsFinish
+                item = cast(OutputType, construct_type(type_=cast_type, value=item))
+                chat_box.update_msg("AllToolsFinish:"+item.log .replace("\n", "\n\n"))
+            elif 'AllToolsActionToolStart' == item['class_name']:
+
+                cast_type: Type[OutputType] = AllToolsActionToolStart
+                item = cast(OutputType, construct_type(type_=cast_type, value=item))
                 formatted_data = {
                     "Function": item.tool,
                     "function_input": item.tool_input
@@ -275,13 +237,16 @@ async def dialogue_page(
                 chat_box.insert_msg(  # TODO: insert text directly not shown
                     Markdown(text, title="Function call", in_expander=True, expanded=True, state="running"))
 
-            elif isinstance(item, AllToolsActionToolEnd):
+            elif 'AllToolsActionToolEnd' == item['class_name']:
 
+                cast_type: Type[OutputType] = AllToolsActionToolEnd
+                item = cast(OutputType, construct_type(type_=cast_type, value=item))
                 text = """\n```\nObservation:\n{}\n```\n""".format(item.tool_output)
                 chat_box.update_msg(text, streaming=False, expanded=False, state="complete")
 
-            elif isinstance(item, AllToolsLLMStatus):
-
+            elif 'AllToolsLLMStatus' == item['class_name']:
+                cast_type: Type[OutputType] = AllToolsLLMStatus
+                item = cast(OutputType, construct_type(type_=cast_type, value=item))
                 if item.status == AgentStatus.error:
                     st.error(item.text)
                 elif item.status == AgentStatus.chain_start:
@@ -294,15 +259,12 @@ async def dialogue_page(
                     text += item.text
                     chat_box.update_msg(text.replace("\n", "\n\n"), streaming=True, metadata=metadata)
                 elif item.status == AgentStatus.llm_end:
-                    text += item.text
-                    chat_box.update_msg(text.replace("\n", "\n\n"), streaming=False, state="complete")
+                    chat_box.update_msg("llm_output:" + item.text.replace("\n", "\n\n"), streaming=False, state="complete")
                 elif item.status == AgentStatus.chain_end:
-                    text += item.text
-                    chat_box.update_msg(text.replace("\n", "\n\n"), streaming=False, state="complete")
-                else:
-                    st.write(item.text)
 
-        chat_box.update_msg(text, streaming=False, metadata=metadata)
+                    chat_box.update_msg("chain_output:"+item.text.replace("\n", "\n\n"), streaming=False, state="complete")
+                else:
+                    st.write("item.status :"+item.status + item.text)
 
     now = datetime.now()
     with tab1:
@@ -322,8 +284,3 @@ async def dialogue_page(
         mime="text/markdown",
         use_container_width=True,
     )
-
-
-if __name__ == "__main__":
-    api = ZhipuAIPluginsClient(base_url="http://127.0.0.1:10000")
-    run_sync(dialogue_page, api)

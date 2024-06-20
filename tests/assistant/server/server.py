@@ -65,7 +65,7 @@ async def chat(query: str = Body(..., description="用户输入", examples=["帮
 
 if __name__ == "__main__":
     logging_conf = get_config_dict(
-        "INFO",
+        "debug",
         get_log_file(log_path="logs", sub_dir=f"local_{get_timestamp_ms()}"),
         1024 * 1024 * 1024 * 3,
         1024 * 1024 * 1024 * 3,

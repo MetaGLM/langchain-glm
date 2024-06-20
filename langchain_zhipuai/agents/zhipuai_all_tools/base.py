@@ -136,7 +136,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
     class Config:
         arbitrary_types_allowed = True
 
-    @validator('intermediate_steps', pre=True, each_item=True)
+    @validator('intermediate_steps', pre=True, each_item=True, allow_reuse=True)
     def check_intermediate_steps(cls, v):
 
         return v

@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Union, Any
 from typing_extensions import Self
 from abc import abstractmethod
-from pydantic.v1 import BaseModel, Field
+from zhipuai.core import BaseModel
 from enum import Enum, auto
 import uuid
 import json
@@ -53,7 +53,7 @@ class AllToolsAction(AllToolsBaseComponent):
     run_id: str
     status: int  # AgentStatus
     tool: str
-    tool_input: Any
+    tool_input: Union[str, Dict[str,str]]
     log: str
 
     @classmethod
@@ -66,7 +66,7 @@ class AllToolsFinish(AllToolsBaseComponent):
 
     run_id: str
     status: int  # AgentStatus
-    return_values: dict
+    return_values: Dict[str, str]
     log: str
 
     @classmethod
