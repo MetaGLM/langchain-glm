@@ -34,7 +34,7 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
         super().__init__()
         self.queue = asyncio.Queue()
         self.done = asyncio.Event()
-        self.out = True
+        self.out = False
         self.intermediate_steps: List[Tuple[AgentAction, str]] = []
         self.outputs: Dict[str, Any] = {}
 
@@ -98,7 +98,6 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
 
         self.queue.put_nowait(dumps(data))
 
-
     async def on_llm_error(
             self, error: Exception | KeyboardInterrupt, **kwargs: Any
     ) -> None:
@@ -146,7 +145,6 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
         }
         self.queue.put_nowait(dumps(data))
 
-
     async def on_tool_error(
             self,
             error: BaseException,
@@ -165,7 +163,6 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
         }
 
         self.queue.put_nowait(dumps(data))
-
 
     async def on_agent_action(
             self,
@@ -211,7 +208,6 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
         }
 
         self.queue.put_nowait(dumps(data))
-
 
     async def on_chain_start(
             self,
@@ -281,5 +277,5 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
             "tags": tags,
         }
         self.queue.put_nowait(dumps(data))
-
         self.out = True
+        # self.done.set()

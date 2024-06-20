@@ -247,75 +247,87 @@ async def dialogue_page(
         chat_box.user_say(prompt)
 
         chat_box.ai_say("正在思考...")
+        agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
+            model_name="chatglm3-qingyan-alltools-130b",
+            history=history,
+            tools=[
+                {
+                    "type": "code_interpreter"
+                }
+            ]
+        )
         text = ""
         message_id = uuid.uuid4().hex
+
         metadata = {
             "message_id": message_id,
         }
-        if "agent_executor" not in st.session_state:
+        chat_iterator = agent_executor.invoke(chat_input=prompt)
+        async for item in chat_iterator:
+            chat_box.update_msg("", streaming=False)
+            if isinstance(item, AllToolsAction):
+                chat_box.insert_msg(f"正在解读{item.tool}工具输出结果...")
 
-            agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
-                model_name="chatglm3-qingyan-alltools-130b"
-                # tools=[
-                #     {
-                #         "type": "code_interpreter"
-                #     }
-                # ]
-            )
-            st.session_state['agent_executor'] = agent_executor
-        else:
-            agent_executor = st.session_state.agent_executor
+            elif isinstance(item, AllToolsFinish):
+                chat_box.insert_msg(item.log.replace("\n", "\n\n"))
 
-        for chunk in agent_executor.invoke(chat_input=prompt):
-            run_ui(message_id, chunk)
+            elif isinstance(item, AllToolsActionToolStart):
+                formatted_data = {
+                    "Function": item.tool,
+                    "function_input": item.tool_input
+                }
+                formatted_json = json.dumps(formatted_data, indent=2, ensure_ascii=False)
+                text = """\n```{}\n```\n""".format(formatted_json)
+                chat_box.insert_msg(  # TODO: insert text directly not shown
+                    Markdown(text, title="Function call", in_expander=True, expanded=True, state="running"))
 
+            elif isinstance(item, AllToolsActionToolEnd):
 
-def run_ui(message_id, item):
-    metadata = {
-        "message_id": message_id,
-    }
+                text = """\n```\nObservation:\n{}\n```\n""".format(item.tool_output)
+                chat_box.update_msg(text, streaming=False, expanded=False, state="complete")
 
-    if isinstance(item, AllToolsAction):
-        with st.chat_message("assistant"):
-            st.write(f"正在解读{item.tool}工具输出结果...")
+            elif isinstance(item, AllToolsLLMStatus):
 
-    elif isinstance(item, AllToolsFinish):
-        with st.chat_message("assistant"):
-            st.write(f"{item.log}")
+                if item.status == AgentStatus.error:
+                    st.error(item.text)
+                elif item.status == AgentStatus.chain_start:
+                    chat_box.insert_msg(f"")
+                elif item.status == AgentStatus.llm_start:
+                    text = item.text or ""
+                    chat_box.insert_msg(text.replace("\n", "\n\n"))
 
-    elif isinstance(item, AllToolsActionToolStart):
-        formatted_data = {
-            "Function": item.tool,
-            "function_input": item.tool_input
-        }
-        formatted_json = json.dumps(formatted_data, indent=2, ensure_ascii=False)
-        text = """\n```{}\n```\n""".format(formatted_json)
-        with st.chat_message("assistant"):
-            st.write(Markdown(text, title="Function call", in_expander=True, expanded=True, state="running"))
+                elif item.status == AgentStatus.llm_new_token:
+                    text += item.text
+                    chat_box.update_msg(text.replace("\n", "\n\n"), streaming=True, metadata=metadata)
+                elif item.status == AgentStatus.llm_end:
+                    text += item.text
+                    chat_box.update_msg(text.replace("\n", "\n\n"), streaming=False, state="complete")
+                elif item.status == AgentStatus.chain_end:
+                    text += item.text
+                    chat_box.update_msg(text.replace("\n", "\n\n"), streaming=False, state="complete")
+                else:
+                    st.write(item.text)
 
-    elif isinstance(item, AllToolsActionToolEnd):
+        chat_box.update_msg(text, streaming=False, metadata=metadata)
 
-        text = """\n```\nObservation:\n{}\n```\n""".format(item.tool_output)
-        with st.chat_message("assistant"):
-            st.write(f"{text}")
+    now = datetime.now()
+    with tab1:
+        cols = st.columns(2)
+        export_btn = cols[0]
+        if cols[1].button(
+                "清空对话",
+                use_container_width=True,
+        ):
+            chat_box.reset_history()
+            rerun()
 
-    elif isinstance(item, AllToolsLLMStatus):
-
-        st.write(f"{item.text}")
-        #
-        # elif item.status == AgentStatus.chain_start:
-        #     chat_box.insert_msg(f"")
-        # elif item.status == AgentStatus.llm_start:
-        #     text = item.text or ""
-        #     chat_box.update_msg(text.replace("\n", "\n\n"), streaming=True, metadata=metadata)
-        #
-        # elif item.status == AgentStatus.llm_new_token:
-        #     chat_box.update_msg(item.text.replace("\n", "\n\n"), streaming=True, metadata=metadata)
-        # elif item.status == AgentStatus.llm_end:
-        #     chat_box.update_msg(item.text.replace("\n", "\n\n"), streaming=False, metadata=metadata)
-        # elif item.status == AgentStatus.chain_end:
-        #     chat_box.update_msg(item.text.replace("\n", "\n\n"), streaming=False, metadata=metadata)
-
+    export_btn.download_button(
+        "导出记录",
+        "".join(chat_box.export2md()),
+        file_name=f"{now:%Y-%m-%d %H.%M}_对话记录.md",
+        mime="text/markdown",
+        use_container_width=True,
+    )
 
 if __name__ == "__main__":
     run_sync(dialogue_page)

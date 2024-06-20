@@ -269,15 +269,13 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
     class Config:
         arbitrary_types_allowed = True
 
-    def __init__(self, /, **data: Any):
-
-        super().__init__(**data)
-
     @classmethod
     def create_agent_executor(
             cls,
             model_name: str,
             *,
+            intermediate_steps: List[Tuple[AgentAction, str]] = [],
+            history: List[Union[List, Tuple, Dict]] = [],
             tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = None,
             temperature: float = 0.7,
             **kwargs: Any,
@@ -321,29 +319,12 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
             model_name=model_name,
             agent_executor=agent_executor,
             callback=callback,
+            intermediate_steps=intermediate_steps,
+            history=history,
             **kwargs,
         )
 
     def invoke(self, chat_input: str, config: Optional[RunnableConfig] = None) -> AsyncIterable[OutputType]:
-        #     loop = asyncio.new_event_loop()
-        #     asyncio.set_event_loop(loop)
-        #     async_gen = self.chat(chat_input)
-        #
-        #     try:
-        #         result = loop.run_until_complete(self.collect_results(async_gen))
-        #     finally:
-        #         loop.close()
-        #
-        #     for status in result:
-        #         yield status
-        #
-        # async def collect_results(self, async_gen: AsyncIterable[OutputType]) -> list[OutputType]:
-        #     results = []
-        #     async for item in async_gen:
-        #         results.append(item)
-        #     return results
-        #
-        # async def chat(self, chat_input: str):
 
         async def chat_iterator() -> AsyncIterable[OutputType]:
             history_message = []
@@ -429,9 +410,9 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
 
                 elif data["status"] == AgentStatus.error:
                     class_status = AllToolsLLMStatus(
-                        run_id=data["run_id"],
+                        run_id=data.get("run_id", "abc"),
                         status=data["status"],
-                        text=data["outputs"]['output'],
+                        text=json.dumps(data, ensure_ascii=False),
                     )
                 elif data["status"] == AgentStatus.chain_start:
                     class_status = AllToolsLLMStatus(
