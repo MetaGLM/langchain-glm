@@ -207,6 +207,7 @@ def dialogue_page(
         chat_box.ai_say("正在思考...")
 
         text = ""
+        started = False
         message_id = uuid.uuid4().hex
 
         metadata = {
@@ -214,16 +215,20 @@ def dialogue_page(
         }
 
         for item in client.chat(query=prompt, history=history):
+            # clear initial message
+            if not started:
+                chat_box.update_msg("", streaming=False)
+                started = True
             if 'AllToolsAction' == item['class_name']:
 
                 cast_type: Type[OutputType] = AllToolsAction
                 item = cast(OutputType, construct_type(type_=cast_type, value=item))
-                chat_box.update_msg(f"正在解读{item.tool}工具输出结果...")
+                chat_box.insert_msg(f"")
 
             elif 'AllToolsFinish' == item['class_name']:
                 cast_type: Type[OutputType] = AllToolsFinish
                 item = cast(OutputType, construct_type(type_=cast_type, value=item))
-                chat_box.update_msg("AllToolsFinish:"+item.log .replace("\n", "\n\n"))
+                chat_box.update_msg("AllToolsFinish:"+item.log )
             elif 'AllToolsActionToolStart' == item['class_name']:
 
                 cast_type: Type[OutputType] = AllToolsActionToolStart
@@ -234,15 +239,20 @@ def dialogue_page(
                 }
                 formatted_json = json.dumps(formatted_data, indent=2, ensure_ascii=False)
                 text = """\n```{}\n```\n""".format(formatted_json)
+                function_call = text
                 chat_box.insert_msg(  # TODO: insert text directly not shown
-                    Markdown(text, title="Function call", in_expander=True, expanded=True, state="running"))
+                    Markdown(text, title=f"正在解读{item.tool}工具输出结果...", in_expander=True, expanded=True, state="running"))
 
             elif 'AllToolsActionToolEnd' == item['class_name']:
 
                 cast_type: Type[OutputType] = AllToolsActionToolEnd
                 item = cast(OutputType, construct_type(type_=cast_type, value=item))
+
+
                 text = """\n```\nObservation:\n{}\n```\n""".format(item.tool_output)
-                chat_box.update_msg(text, streaming=False, expanded=False, state="complete")
+
+                chat_box.update_msg(function_call+"\n"+ text,title=f"Function call {item.tool}.",
+                                    streaming=False, expanded=False, state="complete")
 
             elif 'AllToolsLLMStatus' == item['class_name']:
                 cast_type: Type[OutputType] = AllToolsLLMStatus
@@ -253,16 +263,16 @@ def dialogue_page(
                     chat_box.insert_msg(f"")
                 elif item.status == AgentStatus.llm_start:
                     text = item.text or ""
-                    chat_box.insert_msg(text.replace("\n", "\n\n"))
+                    chat_box.insert_msg(text)
 
                 elif item.status == AgentStatus.llm_new_token:
                     text += item.text
-                    chat_box.update_msg(text.replace("\n", "\n\n"), streaming=True, metadata=metadata)
+                    chat_box.update_msg(text, streaming=True, metadata=metadata)
                 elif item.status == AgentStatus.llm_end:
-                    chat_box.update_msg("llm_output:" + item.text.replace("\n", "\n\n"), streaming=False, state="complete")
+                    chat_box.update_msg(item.text, streaming=False, state="complete")
                 elif item.status == AgentStatus.chain_end:
 
-                    chat_box.update_msg("chain_output:"+item.text.replace("\n", "\n\n"), streaming=False, state="complete")
+                    chat_box.update_msg(item.text, streaming=False, state="complete")
                 else:
                     st.write("item.status :"+item.status + item.text)
 
