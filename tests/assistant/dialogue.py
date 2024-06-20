@@ -54,6 +54,8 @@ from langchain_zhipuai.agents.zhipuai_all_tools.base import AllToolsAction, AllT
     AllToolsActionToolEnd, AllToolsLLMStatus, ZhipuAIAllToolsRunnable
 from langchain_zhipuai.callbacks.callback_handler.agent_callback_handler import AgentStatus
 from tests.assistant.call_collector import IteratorCallbackHandler, collect_results
+
+from tests.assistant.client import ZhipuAIPluginsClient
 from tests.assistant.utils import run_sync
 
 
@@ -183,7 +185,7 @@ HISTORY_LEN = 10
 
 
 async def dialogue_page(
-        is_lite: bool = False,
+        client: ZhipuAIPluginsClient
 ):
     ctx = chat_box.context
     ctx.setdefault("uid", uuid.uuid4().hex)
@@ -247,23 +249,15 @@ async def dialogue_page(
         chat_box.user_say(prompt)
 
         chat_box.ai_say("正在思考...")
-        agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
-            model_name="chatglm3-qingyan-alltools-130b",
-            history=history,
-            tools=[
-                {
-                    "type": "code_interpreter"
-                }
-            ]
-        )
+
         text = ""
         message_id = uuid.uuid4().hex
 
         metadata = {
             "message_id": message_id,
         }
-        chat_iterator = agent_executor.invoke(chat_input=prompt)
-        async for item in chat_iterator:
+
+        for item in client.chat(query=prompt, history=history):
             chat_box.update_msg("", streaming=False)
             if isinstance(item, AllToolsAction):
                 chat_box.insert_msg(f"正在解读{item.tool}工具输出结果...")
@@ -329,5 +323,7 @@ async def dialogue_page(
         use_container_width=True,
     )
 
+
 if __name__ == "__main__":
-    run_sync(dialogue_page)
+    api = ZhipuAIPluginsClient(base_url="http://127.0.0.1:10000")
+    run_sync(dialogue_page, api)

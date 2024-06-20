@@ -7,9 +7,7 @@ from langchain_core.tools import BaseTool
 from langchain_core.runnables.base import RunnableBindingBase
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
-from langchain.agents.format_scratchpad.openai_tools import (
-    format_to_openai_tool_messages,
-)
+from langchain_zhipuai.agents.format_scratchpad.all_tools import format_to_zhipuai_all_tool_messages
 from langchain_zhipuai.agents.output_parsers import ZhipuAiALLToolsAgentOutputParser
 
 
@@ -89,7 +87,7 @@ def create_zhipuai_tools_agent(
 
     agent = (
         RunnablePassthrough.assign(
-            agent_scratchpad=lambda x: format_to_openai_tool_messages(
+            agent_scratchpad=lambda x: format_to_zhipuai_all_tool_messages(
                 x["intermediate_steps"]
             )
         )

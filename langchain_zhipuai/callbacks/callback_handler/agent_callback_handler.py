@@ -9,6 +9,7 @@ from langchain.callbacks import AsyncIteratorCallbackHandler
 from langchain.schema import AgentAction, AgentFinish
 from langchain_core.outputs import LLMResult
 
+from langchain_zhipuai.tools.tools_registry import BaseToolOutput
 from langchain_zhipuai.utils import History
 
 
@@ -35,7 +36,7 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
         self.queue = asyncio.Queue()
         self.done = asyncio.Event()
         self.out = False
-        self.intermediate_steps: List[Tuple[AgentAction, str]] = []
+        self.intermediate_steps: List[Tuple[AgentAction, BaseToolOutput]] = []
         self.outputs: Dict[str, Any] = {}
 
     async def on_llm_start(

@@ -35,16 +35,16 @@ async def test_all_tools(logging_conf):
     chat_iterator = agent_executor.invoke(chat_input="看下本地文件有哪些，告诉我你用的是什么文件,查看当前目录")
     async for item in chat_iterator:
         if isinstance(item, AllToolsAction):
-            print("AllToolsAction:" + str(item.model_dump_json()))
+            print("AllToolsAction:" + str(item.to_json()))
 
         elif isinstance(item, AllToolsFinish):
-            print("AllToolsFinish:" + str(item.model_dump_json()))
+            print("AllToolsFinish:" + str(item.to_json()))
 
         elif isinstance(item, AllToolsActionToolStart):
-            print("AllToolsActionToolStart:" + str(item.model_dump_json()))
+            print("AllToolsActionToolStart:" + str(item.to_json()))
 
         elif isinstance(item, AllToolsActionToolEnd):
-            print("AllToolsActionToolEnd:" + str(item.model_dump_json()))
+            print("AllToolsActionToolEnd:" + str(item.to_json()))
         elif isinstance(item, AllToolsLLMStatus):
             if item.status == AgentStatus.llm_end:
                 print("llm_end:" + item.text)
@@ -52,16 +52,16 @@ async def test_all_tools(logging_conf):
     chat_iterator = agent_executor.invoke(chat_input="打印下test_alltools.py")
     async for item in chat_iterator:
         if isinstance(item, AllToolsAction):
-            print("AllToolsAction:" + str(item.model_dump_json()))
+            print("AllToolsAction:" + str(item.to_json()))
 
         elif isinstance(item, AllToolsFinish):
-            print("AllToolsFinish:" + str(item.model_dump_json()))
+            print("AllToolsFinish:" + str(item.to_json()))
 
         elif isinstance(item, AllToolsActionToolStart):
-            print("AllToolsActionToolStart:" + str(item.model_dump_json()))
+            print("AllToolsActionToolStart:" + str(item.to_json()))
 
         elif isinstance(item, AllToolsActionToolEnd):
-            print("AllToolsActionToolEnd:" + str(item.model_dump_json()))
+            print("AllToolsActionToolEnd:" + str(item.to_json()))
         elif isinstance(item, AllToolsLLMStatus):
             if item.status == AgentStatus.llm_end:
                 print("llm_end:" + item.text)

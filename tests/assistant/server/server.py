@@ -1,10 +1,12 @@
 import asyncio
+import json
 import threading
 from pathlib import Path
 from typing import List, Optional, Tuple, Awaitable
 
 from langchain_zhipuai.agents.zhipuai_all_tools import ZhipuAIAllToolsRunnable
 from langchain_zhipuai.agents.zhipuai_all_tools.base import OutputType
+from langchain_zhipuai.tools.tools_registry import BaseToolOutput
 from langchain_zhipuai.utils import History
 from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,8 +23,7 @@ import logging
 import logging.config
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
 
-intermediate_steps: List[Tuple[AgentAction, str]] = []
-
+intermediate_steps: List[Tuple[AgentAction, BaseToolOutput]] = []
 
 
 async def chat(query: str = Body(..., description="用户输入", examples=["帮我计算100+1"]),
@@ -54,7 +55,7 @@ async def chat(query: str = Body(..., description="用户输入", examples=["帮
 
     async def chat_generator():
         async for chat_output in chat_iterator:
-            yield chat_output
+            yield chat_output.to_json()
 
             if agent_executor.callback.out:
                 intermediate_steps.extend(agent_executor.callback.intermediate_steps)

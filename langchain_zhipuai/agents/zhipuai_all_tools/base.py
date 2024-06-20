@@ -1,9 +1,6 @@
 import asyncio
 import json
 import logging
-import queue
-import time
-import uuid
 from typing import (
     Any,
     AsyncIterable,
@@ -20,12 +17,9 @@ from typing import (
     Union, Iterable,
 )
 
-import zhipuai
 from langchain import hub
 from langchain.agents import AgentExecutor
-from langchain.agents.format_scratchpad.openai_tools import (
-    format_to_openai_tool_messages,
-)
+
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
@@ -34,9 +28,12 @@ from langchain_core.runnables import RunnableConfig, RunnableSerializable, ensur
 from langchain_core.tools import BaseTool
 from langchain_core.runnables.base import RunnableBindingBase
 from langchain_core.utils.function_calling import convert_to_openai_tool
-from pydantic.v1 import BaseModel, Field
+from pydantic.v1 import BaseModel, Field, validator
 
 from langchain_zhipuai.agents.all_tools_bind.base import create_zhipuai_tools_agent
+from langchain_zhipuai.agents.format_scratchpad.all_tools import format_to_zhipuai_all_tool_messages
+from langchain_zhipuai.agents.zhipuai_all_tools.schema import AllToolsAction, AllToolsActionToolStart, \
+    AllToolsActionToolEnd, AllToolsFinish, AllToolsLLMStatus
 from langchain_zhipuai.callbacks.callback_handler.agent_callback_handler import (
     AgentExecutorAsyncIteratorCallbackHandler,
     AgentStatus,
@@ -44,6 +41,7 @@ from langchain_zhipuai.callbacks.callback_handler.agent_callback_handler import 
 from langchain_zhipuai.chat_models import ChatZhipuAI
 from langchain_zhipuai.tools import get_tool
 from langchain_zhipuai.tools.tools import _aperform_agent_action, _perform_agent_action
+from langchain_zhipuai.tools.tools_registry import BaseToolOutput
 from langchain_zhipuai.utils import History
 
 logger = logging.getLogger()
@@ -91,18 +89,13 @@ def _agents_registry(
     )
     AgentExecutor._aperform_agent_action = _aperform_agent_action
     AgentExecutor._perform_agent_action = _perform_agent_action
+
     agent_executor = AgentExecutor(
         agent=agent, tools=tools, verbose=verbose, callbacks=callbacks, return_intermediate_steps=True
     )
 
     return agent_executor
 
-
-class MsgType:
-    TEXT = 1
-    IMAGE = 2
-    AUDIO = 3
-    VIDEO = 4
 
 
 async def wrap_done(fn: Awaitable, event: asyncio.Event):
@@ -115,132 +108,6 @@ async def wrap_done(fn: Awaitable, event: asyncio.Event):
     finally:
         # Signal the aiter to stop.
         event.set()
-
-
-class AllToolsAction(BaseModel):
-    """AgentFinish with run and thread metadata."""
-
-    run_id: str
-    status: int  # AgentStatus
-    tool: str
-    tool_input: Any
-    log: str
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    def model_dump(self) -> dict:
-        result = {
-            "run_id": self.run_id,
-            "status": self.status,
-            "tool": self.tool,
-            "tool_input": self.tool_input,
-            "log": self.log,
-        }
-
-        return result
-
-    def model_dump_json(self):
-        return json.dumps(self.model_dump(), ensure_ascii=False)
-
-
-class AllToolsFinish(BaseModel):
-    """AgentFinish with run and thread metadata."""
-
-    run_id: str
-    status: int  # AgentStatus
-    return_values: dict
-    log: str
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    def model_dump(self) -> dict:
-        result = {
-            "run_id": self.run_id,
-            "status": self.status,
-            "return_values": self.return_values,
-            "log": self.log,
-        }
-
-        return result
-
-    def model_dump_json(self):
-        return json.dumps(self.model_dump(), ensure_ascii=False)
-
-
-class AllToolsActionToolStart(BaseModel):
-    """AllToolsAction with run and thread metadata."""
-
-    run_id: str
-    status: int  # AgentStatus
-    tool: str
-    tool_input: Optional[str] = None
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    def model_dump(self) -> dict:
-        result = {
-            "run_id": self.run_id,
-            "status": self.status,
-            "tool": self.tool,
-            "tool_input": self.tool_input,
-        }
-
-        return result
-
-    def model_dump_json(self):
-        return json.dumps(self.model_dump(), ensure_ascii=False)
-
-
-class AllToolsActionToolEnd(BaseModel):
-    """AllToolsActionEnd with run and thread metadata."""
-
-    run_id: str
-
-    status: int  # AgentStatus
-    tool: str
-    tool_output: str
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    def model_dump(self) -> dict:
-        result = {
-            "run_id": self.run_id,
-            "status": self.status,
-            "tool": self.tool,
-            "tool_output": self.tool_output,
-        }
-
-        return result
-
-    def model_dump_json(self):
-        return json.dumps(self.model_dump(), ensure_ascii=False)
-
-
-class AllToolsLLMStatus(BaseModel):
-    run_id: str
-    status: int  # AgentStatus
-    text: str
-    message_type: int = MsgType.TEXT
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    def model_dump(self) -> dict:
-        result = {
-            "run_id": self.run_id,
-            "status": self.status,
-            "message_type": self.message_type,
-        }
-
-        return result
-
-    def model_dump_json(self):
-        return json.dumps(self.model_dump(), ensure_ascii=False)
-
 
 OutputType = Union[
     AllToolsAction,
@@ -261,7 +128,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
     """ZhipuAI AgentExecutor callback."""
     check_every_ms: float = 1_000.0
     """Frequency with which to check run progress in ms."""
-    intermediate_steps: List[Tuple[AgentAction, str]] = []
+    intermediate_steps: List[Tuple[AgentAction, BaseToolOutput]] = []
     """intermediate_steps to store the data to be processed."""
     history: List[Union[List, Tuple, Dict]] = []
     """user message history"""
@@ -269,12 +136,17 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
     class Config:
         arbitrary_types_allowed = True
 
+    @validator('intermediate_steps', pre=True, each_item=True)
+    def check_intermediate_steps(cls, v):
+
+        return v
+
     @classmethod
     def create_agent_executor(
             cls,
             model_name: str,
             *,
-            intermediate_steps: List[Tuple[AgentAction, str]] = [],
+            intermediate_steps: List[Tuple[AgentAction, BaseToolOutput]] = [],
             history: List[Union[List, Tuple, Dict]] = [],
             tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = None,
             temperature: float = 0.7,
@@ -340,7 +212,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                         {
                             "input": chat_input,
                             "chat_history": history_message,
-                            "agent_scratchpad": lambda x: format_to_openai_tool_messages(
+                            "agent_scratchpad": lambda x: format_to_zhipuai_all_tool_messages(
                                 self.intermediate_steps
                             )
                         }

@@ -7,7 +7,7 @@ from langchain_core.outputs import ChatGeneration, Generation
 from langchain.agents.agent import MultiActionAgentOutputParser
 from langchain_zhipuai.agents.output_parsers.tools import (
     ToolAgentAction,
-    parse_ai_message_to_tool_action,
+    parse_ai_message_to_tool_action, CodeInterpreterAgentAction,
 )
 
 ZhipuAiALLToolAgentAction = ToolAgentAction
@@ -22,7 +22,9 @@ def parse_ai_message_to_zhipuai_all_tool_action(
         return tool_actions
     final_actions: List[AgentAction] = []
     for action in tool_actions:
-        if isinstance(action, ToolAgentAction):
+        if isinstance(action, CodeInterpreterAgentAction):
+            final_actions.append(action)
+        elif isinstance(action, ToolAgentAction):
             final_actions.append(
                 ZhipuAiALLToolAgentAction(
                     tool=action.tool,

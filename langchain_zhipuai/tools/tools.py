@@ -12,7 +12,7 @@ from typing import (
     Dict,
     Iterator,
     List,
-    Optional,
+    Optional, Tuple, Union,
 )
 
 from langchain_core.agents import AgentAction, AgentFinish, AgentStep
@@ -24,7 +24,9 @@ from langchain_core.callbacks import (
     CallbackManagerForToolRun,
     Callbacks,
 )
-from langchain.agents.tools import InvalidTool
+from langchain_core.messages import BaseMessage
+
+from langchain_zhipuai.tools.tools_registry import BaseToolOutput
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +46,12 @@ class AdapterAllTool(BaseTool):
             self,
             tool: str,
             tool_input: str,
-            log:str,
+            log: str,
             run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
+    ) -> BaseToolOutput:
         """Use the tool."""
 
-        return (
+        return BaseToolOutput(
             f"""Access：{tool}, Message: {tool_input},{log}"""
         )
 
@@ -57,16 +59,17 @@ class AdapterAllTool(BaseTool):
             self,
             tool: str,
             tool_input: str,
-            log:str,
+            log: str,
             run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
-    ) -> str:
+    ) -> BaseToolOutput:
         """Use the tool asynchronously."""
 
-        return (
+        return BaseToolOutput(
             f"""Access：{tool}, Message: {tool_input},{log}"""
         )
 
 
+# fix platform adapter tool for all tools.  with langchain.agents.agent.AgentExecutor
 def _perform_agent_action(
         self,
         name_to_tool_map: Dict[str, BaseTool],
@@ -74,6 +77,7 @@ def _perform_agent_action(
         agent_action: AgentAction,
         run_manager: Optional[CallbackManagerForChainRun] = None,
 ) -> AgentStep:
+    """Perform an agent action. platform adapter tool for all tools."""
     if run_manager:
         run_manager.on_agent_action(agent_action, color="green")
     # Otherwise we lookup the tool
@@ -111,6 +115,7 @@ def _perform_agent_action(
     return AgentStep(action=agent_action, observation=observation)
 
 
+# fix platform adapter tool for all tools.  with langchain.agents.agent.AgentExecutor
 async def _aperform_agent_action(
         self,
         name_to_tool_map: Dict[str, BaseTool],
@@ -118,6 +123,7 @@ async def _aperform_agent_action(
         agent_action: AgentAction,
         run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
 ) -> AgentStep:
+    """Perform an agent action. platform adapter tool for all tools."""
     if run_manager:
         await run_manager.on_agent_action(
             agent_action, verbose=self.verbose, color="green"
