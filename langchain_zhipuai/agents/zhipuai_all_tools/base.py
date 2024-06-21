@@ -32,7 +32,7 @@ from langchain_zhipuai.agents.format_scratchpad.all_tools import format_to_zhipu
 from langchain_zhipuai.agents.output_parsers import ZhipuAiALLToolsAgentOutputParser
 from langchain_zhipuai.agents.zhipuai_all_tools.schema import AllToolsAction, AllToolsActionToolStart, \
     AllToolsActionToolEnd, AllToolsFinish, AllToolsLLMStatus
-from langchain_zhipuai.callbacks.callback_handler.agent_callback_handler import (
+from langchain_zhipuai.callbacks.agent_callback_handler import (
     AgentExecutorAsyncIteratorCallbackHandler,
     AgentStatus,
 )

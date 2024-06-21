@@ -1,6 +1,5 @@
 import logging
 import logging.config
-from asyncio import sleep
 
 import pytest
 
@@ -14,8 +13,7 @@ from langchain_zhipuai.agents.zhipuai_all_tools.base import (
     AllToolsFinish,
     AllToolsLLMStatus,
 )
-from langchain_zhipuai.callbacks.callback_handler.agent_callback_handler import (
-    AgentExecutorAsyncIteratorCallbackHandler,
+from langchain_zhipuai.callbacks.agent_callback_handler import (
     AgentStatus,
 )
 
@@ -25,7 +23,7 @@ async def test_all_tools(logging_conf):
     logging.config.dictConfig(logging_conf)  # type: ignore
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
-        model_name="chatglm3-qingyan-alltools-130b"
+        model_name="tob-alltools-api-dev"
         # tools=[
         #     {
         #         "type": "code_interpreter"

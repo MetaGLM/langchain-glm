@@ -1,9 +1,13 @@
 [tool.poetry]
-name = "langchain-zhipuai"
+name = "langchain-zhipu"
 version = "0.0.1"
 description = ""
 authors = ["glide-the <2533736852@qq.com>"]
 readme = "README.md"
+packages = [
+    {include = "langchain_zhipu"},
+    {include = "langchain_zhipuai"}
+]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<3.12,!=3.9.7"

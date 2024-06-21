@@ -456,7 +456,7 @@ class ChatZhipuAI(BaseChatModel):
                 continue
             choice = chunk["choices"][0]
             # all_tools chunk load action exec parse tool
-            if params['model'] in ['chatglm3-qingyan-alltools-130b','glm-4-alltools']:
+            if params['model'] in ['glm-4-alltools-dev','glm-4-alltools']:
                 default_chunk_class = ALLToolsMessageChunk
 
             chunk = _convert_delta_to_message_chunk(
