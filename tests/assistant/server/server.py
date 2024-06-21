@@ -57,8 +57,8 @@ async def chat(query: str = Body(..., description="用户输入", examples=["帮
         async for chat_output in chat_iterator:
             yield chat_output.to_json()
 
-            if agent_executor.callback.out:
-                intermediate_steps.extend(agent_executor.callback.intermediate_steps)
+            # if agent_executor.callback.out:
+            # intermediate_steps.extend(agent_executor.callback.intermediate_steps)
 
     return EventSourceResponse(chat_generator())
 
