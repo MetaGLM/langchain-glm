@@ -260,10 +260,12 @@ def dialogue_page(
                 if item.status == AgentStatus.error:
                     st.error(item.text)
                 elif item.status == AgentStatus.chain_start:
-                    chat_box.insert_msg(f"")
+                    chat_box.insert_msg(Markdown(text, title=f"chain_start...", in_expander=True, expanded=True, state="complete"))
+
                 elif item.status == AgentStatus.llm_start:
                     text = item.text or ""
-                    chat_box.insert_msg(text)
+                    chat_box.insert_msg(Markdown(text, title=f"llm_start...", in_expander=True, expanded=True, state="running"))
+
 
                 elif item.status == AgentStatus.llm_new_token:
                     text += item.text
@@ -272,7 +274,9 @@ def dialogue_page(
                     chat_box.update_msg(item.text, streaming=False, state="complete")
                 elif item.status == AgentStatus.chain_end:
 
-                    chat_box.update_msg(item.text, streaming=False, state="complete")
+                    chat_box.update_msg(item.text, title=f"chain_end...",
+                                        streaming=False, expanded=False, state="complete")
+                    chat_box.insert_msg(item.text)
                 else:
                     st.write("item.status :"+item.status + item.text)
 
