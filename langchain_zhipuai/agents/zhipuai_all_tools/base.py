@@ -7,31 +7,29 @@ from typing import (
     Awaitable,
     Callable,
     Dict,
-    Generator,
     List,
-    Literal,
     Optional,
     Sequence,
     Tuple,
     Type,
-    Union, Iterable,
-)
-
+    Union, )
 from langchain import hub
 from langchain.agents import AgentExecutor
 
-from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
+from langchain_core.agents import AgentAction
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.messages import AIMessage, HumanMessage, convert_to_messages
-from langchain_core.runnables import RunnableConfig, RunnableSerializable, ensure_config
+from langchain_core.messages import convert_to_messages
+from langchain_core.runnables import RunnableConfig, RunnableSerializable
 from langchain_core.tools import BaseTool
 from langchain_core.runnables.base import RunnableBindingBase
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from pydantic.v1 import BaseModel, Field, validator
 
+from langchain_zhipuai.agent_toolkits.all_tools.tool import AdapterAllTool
 from langchain_zhipuai.agents.all_tools_bind.base import create_zhipuai_tools_agent
 from langchain_zhipuai.agents.format_scratchpad.all_tools import format_to_zhipuai_all_tool_messages
+from langchain_zhipuai.agents.output_parsers import ZhipuAiALLToolsAgentOutputParser
 from langchain_zhipuai.agents.zhipuai_all_tools.schema import AllToolsAction, AllToolsActionToolStart, \
     AllToolsActionToolEnd, AllToolsFinish, AllToolsLLMStatus
 from langchain_zhipuai.callbacks.callback_handler.agent_callback_handler import (
@@ -39,9 +37,7 @@ from langchain_zhipuai.callbacks.callback_handler.agent_callback_handler import 
     AgentStatus,
 )
 from langchain_zhipuai.chat_models import ChatZhipuAI
-from langchain_zhipuai.tools import get_tool
-from langchain_zhipuai.tools.tools import _aperform_agent_action, _perform_agent_action
-from langchain_zhipuai.tools.tools_registry import BaseToolOutput
+from tests.assistant.server.tools.tools_registry import BaseToolOutput
 from langchain_zhipuai.utils import History
 
 logger = logging.getLogger()
@@ -82,20 +78,31 @@ def _agents_registry(
         callbacks: List[BaseCallbackHandler] = [],
         verbose: bool = False,
 ):
-    prompt = hub.pull("hwchase17/openai-tools-agent")
-    agent = create_zhipuai_tools_agent(
-        prompt=prompt,
-        llm_with_all_tools=llm_with_all_tools
-    )
-    AgentExecutor._aperform_agent_action = _aperform_agent_action
-    AgentExecutor._perform_agent_action = _perform_agent_action
+
+    if llm_with_all_tools:
+
+        prompt = hub.pull("zhipuai-all-tools-chat/zhipuai-all-tools-agent")
+        agent = create_zhipuai_tools_agent(
+            prompt=prompt,
+            llm_with_all_tools=llm_with_all_tools
+        )
+    else:
+
+        prompt = hub.pull("zhipuai-all-tools-chat/zhipuai-all-tools-chat")
+        agent = (
+            prompt
+            | llm
+            | ZhipuAiALLToolsAgentOutputParser()
+        )
+
+    # AgentExecutor._aperform_agent_action = _aperform_agent_action
+    # AgentExecutor._perform_agent_action = _perform_agent_action
 
     agent_executor = AgentExecutor(
         agent=agent, tools=tools, verbose=verbose, callbacks=callbacks, return_intermediate_steps=True
     )
 
     return agent_executor
-
 
 
 async def wrap_done(fn: Awaitable, event: asyncio.Event):
@@ -108,6 +115,7 @@ async def wrap_done(fn: Awaitable, event: asyncio.Event):
     finally:
         # Signal the aiter to stop.
         event.set()
+
 
 OutputType = Union[
     AllToolsAction,
@@ -166,24 +174,27 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
         )
 
         llm = ChatZhipuAI(**params)
-        all_tools = get_tool().values()
 
         llm_with_all_tools = None
+
+        temp_tools = []
         if tools:
-            temp_tools = []
+            llm_with_all_tools = llm.bind(
+                tools=[_get_assistants_tool(tool) for tool in tools]
+            )
+
+            tools = [t.copy(update={"callbacks": callbacks}) for t in tools if not _is_assistants_builtin_tool(t)]
             temp_tools.extend(tools)
-            temp_tools.extend(all_tools)
-            llm_with_all_tools = llm.bind(
-                tools=[_get_assistants_tool(tool) for tool in temp_tools]
+
+            assistants_builtin_tools = [AdapterAllTool.from_platform_dict(
+                name=t['type'], platform_params=t[t['type']], callbacks=callbacks
             )
-        else:
-            llm_with_all_tools = llm.bind(
-                tools=[_get_assistants_tool(tool) for tool in all_tools]
-            )
-        tools = [t.copy(update={"callbacks": callbacks}) for t in all_tools]
+                for t in tools if _is_assistants_builtin_tool(t)]
+            temp_tools.extend(assistants_builtin_tools)
+
         agent_executor = _agents_registry(
             llm=llm, callbacks=callbacks,
-            tools=tools,
+            tools=temp_tools,
             llm_with_all_tools=llm_with_all_tools,
             verbose=True
         )

@@ -35,13 +35,15 @@ def create_zhipuai_tools_agent(
 
             from langchain import hub
             from langchain_community.chat_models import ChatOpenAI
-            from langchain.agents import AgentExecutor, create_openai_tools_agent
+            from langchain.agents import AgentExecutor
+
+            from langchain_zhipuai.agents.all_tools_bind import create_zhipuai_tools_agent
 
             prompt = hub.pull("hwchase17/openai-tools-agent")
             model = ChatOpenAI()
             llm_with_all_tools = model.bind ...
 
-            agent = create_openai_tools_agent(llm_with_all_tools, prompt)
+            agent = create_zhipuai_tools_agent(llm_with_all_tools, prompt)
             agent_executor = AgentExecutor(agent=agent, tools=tools)
 
             agent_executor.invoke({"input": "hi"})

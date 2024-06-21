@@ -9,7 +9,7 @@ from langchain.callbacks import AsyncIteratorCallbackHandler
 from langchain.schema import AgentAction, AgentFinish
 from langchain_core.outputs import LLMResult
 
-from langchain_zhipuai.tools.tools_registry import BaseToolOutput
+from tests.assistant.server.tools.tools_registry import BaseToolOutput
 from langchain_zhipuai.utils import History
 
 

@@ -11,7 +11,7 @@ from langchain_core.messages import (
 from langchain.agents.output_parsers.tools import ToolAgentAction
 
 from langchain_zhipuai.agents.output_parsers.tools import CodeInterpreterAgentAction
-from langchain_zhipuai.tools.tools_registry import BaseToolOutput
+from tests.assistant.server.tools.tools_registry import BaseToolOutput
 
 
 def _create_tool_message(

@@ -1,13 +1,9 @@
-import asyncio
-import json
 import threading
-from pathlib import Path
-from typing import List, Optional, Tuple, Awaitable
+from typing import List, Tuple
 
 from langchain_zhipuai.agents.zhipuai_all_tools import ZhipuAIAllToolsRunnable
 from langchain_zhipuai.agents.zhipuai_all_tools.base import OutputType
-from langchain_zhipuai.tools.tools_registry import BaseToolOutput
-from langchain_zhipuai.utils import History
+from tests.assistant.server.tools.tools_registry import BaseToolOutput, calculate
 from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import APIRouter, status
@@ -19,9 +15,8 @@ from zhipuai.core.logs import (
     get_timestamp_ms,
 )
 from uvicorn import Config, Server
-import logging
 import logging.config
-from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
+from langchain_core.agents import AgentAction
 
 intermediate_steps: List[Tuple[AgentAction, BaseToolOutput]] = []
 
@@ -48,7 +43,8 @@ async def chat(query: str = Body(..., description="用户输入", examples=["帮
         tools=[
             {
                 "type": "code_interpreter"
-            }
+            },
+            calculate
         ]
     )
     chat_iterator = agent_executor.invoke(chat_input=query)
