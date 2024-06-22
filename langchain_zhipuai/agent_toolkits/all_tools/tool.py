@@ -2,14 +2,22 @@
 
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Union, Dict, Tuple
-from langchain_core.callbacks.manager import (
+from langchain_core.agents import AgentAction, AgentFinish, AgentStep
+from langchain_core.callbacks import (
+    AsyncCallbackManagerForChainRun,
+    AsyncCallbackManagerForToolRun,
+    BaseCallbackManager,
+    CallbackManagerForChainRun,
+    CallbackManagerForToolRun,
     Callbacks,
 )
-from langchain_core.callbacks import (
-    AsyncCallbackManagerForToolRun,
-    CallbackManagerForToolRun,
-)
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, Generic, Optional, Type, TypeVar
+from pydantic.v1 import Extra, Field
+from dataclasses_json import DataClassJsonMixin
 from langchain_core.tools import BaseTool
 import json
 import logging
@@ -45,19 +53,52 @@ class BaseToolOutput:
             return str(self.data)
 
 
-class AdapterAllTool(BaseTool):
-    """platform adapter tool for all tools."""
-
-    name: str
+@dataclass
+class AllToolExecutor(DataClassJsonMixin):
     platform_params: Dict[str, Any]
 
-    @classmethod
-    def from_platform_dict(
-            cls, name: str, platform_params: Dict[str, Any], callbacks: Callbacks = None
-    ) -> "AdapterAllTool":
-        """Convert a platform dict to a tool."""
+    @abstractmethod
+    def run(self,
+            *args: Any,
+            **kwargs: Any) -> BaseToolOutput:
+        pass
 
-        return cls(name=name, platform_params=platform_params, callbacks=callbacks)
+    @abstractmethod
+    async def arun(
+            self,
+            *args: Any,
+            **kwargs: Any,
+    ) -> BaseToolOutput:
+        pass
+
+
+E = TypeVar("E", bound=AllToolExecutor)
+
+
+class AdapterAllTool(BaseTool, Generic[E]):
+    """platform adapter tool for all tools."""
+    name: str
+    description: str
+
+    platform_params: Dict[str, Any]
+    """tools params """
+    adapter_all_tool: E
+
+    def __init__(self, name: str, platform_params: Dict[str, Any], **data: Any):
+
+        super().__init__(name=name, description=f"platform adapter tool for {name}",
+                         platform_params=platform_params,
+                         adapter_all_tool=self._build_adapter_all_tool(platform_params),
+                         **data)
+
+    @abstractmethod
+    def _build_adapter_all_tool(self, platform_params: Dict[str, Any]) -> E:
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def get_type(cls) -> str:
+        raise NotImplementedError
 
     def _to_args_and_kwargs(self, tool_input: Union[str, Dict]) -> Tuple[Tuple, Dict]:
         # For backwards compatibility, if run_input is a string,
@@ -85,26 +126,39 @@ class AdapterAllTool(BaseTool):
 
     def _run(
             self,
-            tool: str,
-            tool_input: str,
-            log: str,
-            run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> BaseToolOutput:
-        """Use the tool."""
-
-        return BaseToolOutput(
-            f"""Access：{tool}, Message: {tool_input},{log}"""
-        )
+            agent_action: AgentAction,
+            run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
+            **tool_run_kwargs: Any,
+    ) -> Any:
+        if 'code_interpreter' in agent_action.tool:
+            return self.adapter_all_tool.run(
+                {
+                    "tool": agent_action.tool,
+                    "tool_input": agent_action.tool_input,
+                    "log": agent_action.log,
+                },
+                verbose=self.verbose,
+                color="red",
+                callbacks=run_manager.get_child() if run_manager else None,
+                **tool_run_kwargs,
+            )
+        else:
+            raise KeyError()
 
     async def _arun(
             self,
-            tool: str,
-            tool_input: str,
-            log: str,
-            run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
-    ) -> BaseToolOutput:
-        """Use the tool asynchronously."""
-
-        return BaseToolOutput(
-            f"""Access：{tool}, Message: {tool_input},{log}"""
-        )
+            agent_action: AgentAction,
+            run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
+            **tool_run_kwargs: Any,
+    ) -> Any:
+        if 'code_interpreter' in agent_action.tool:
+            return await self.adapter_all_tool.arun(
+                **{
+                    "tool": agent_action.tool,
+                    "tool_input": agent_action.tool_input,
+                    "log": agent_action.log,
+                },
+                **tool_run_kwargs,
+            )
+        else:
+            raise KeyError()

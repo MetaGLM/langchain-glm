@@ -1,9 +1,10 @@
 import threading
 from typing import List, Tuple
 
+from langchain_zhipuai.agent_toolkits import BaseToolOutput
 from langchain_zhipuai.agents.zhipuai_all_tools import ZhipuAIAllToolsRunnable
 from langchain_zhipuai.agents.zhipuai_all_tools.base import OutputType
-from tests.assistant.server.tools.tools_registry import BaseToolOutput, calculate
+
 from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import APIRouter, status
@@ -17,6 +18,37 @@ from zhipuai.core.logs import (
 from uvicorn import Config, Server
 import logging.config
 from langchain_core.agents import AgentAction
+
+
+from langchain.agents import tool
+
+from langchain.tools.shell import ShellTool
+from pydantic.v1 import BaseModel, Extra, Field
+
+
+
+@tool
+def calculate(text: str = Field(description="a math expression")) -> BaseToolOutput:
+    """
+    Useful to answer questions about simple calculations.
+    translate user question to a math expression that can be evaluated by numexpr.
+    """
+    import numexpr
+
+    try:
+        ret = str(numexpr.evaluate(text))
+    except Exception as e:
+        ret = f"wrong: {e}"
+
+    return BaseToolOutput(ret)
+
+
+@tool
+def shell(query: str = Field(description="The command to execute")):
+    """Use Shell to execute system shell commands"""
+    tool = ShellTool()
+    return BaseToolOutput(tool.run(tool_input=query))
+
 
 intermediate_steps: List[Tuple[AgentAction, BaseToolOutput]] = []
 

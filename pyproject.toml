@@ -1,11 +1,10 @@
 [tool.poetry]
-name = "langchain-zhipu"
+name = "langchain-zhipuai"
 version = "0.0.1"
 description = ""
 authors = ["glide-the <2533736852@qq.com>"]
 readme = "README.md"
 packages = [
-    {include = "langchain_zhipu"},
     {include = "langchain_zhipuai"}
 ]
 
