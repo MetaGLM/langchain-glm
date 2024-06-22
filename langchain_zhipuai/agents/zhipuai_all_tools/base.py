@@ -138,7 +138,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
     agent_executor: AgentExecutor
     """ZhipuAI AgentExecutor."""
 
-    model_name: str = Field(default="chatglm3-qingyan-alltools-130b")
+    model_name: str = Field(default="tob-alltools-api-dev")
     """工具模型"""
     callback: AgentExecutorAsyncIteratorCallbackHandler
     """ZhipuAI AgentExecutor callback."""

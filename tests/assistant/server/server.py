@@ -63,7 +63,7 @@ async def chat(
 ):
     """Agent 对话"""
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
-        model_name="chatglm3-qingyan-alltools-130b",
+        model_name="tob-alltools-api-dev",
         history=history,
         intermediate_steps=intermediate_steps,
         tools=[{"type": "code_interpreter"}, calculate],
