@@ -6,10 +6,10 @@
 
     BaseCallbackHandler --> <name>CallbackHandler  # Example: AimCallbackHandler
 """
-from langchain_zhipuai.callbacks.agent_callback_handler import AgentExecutorAsyncIteratorCallbackHandler
-
+from langchain_zhipuai.callbacks.agent_callback_handler import (
+    AgentExecutorAsyncIteratorCallbackHandler,
+)
 
 __all__ = [
     "AgentExecutorAsyncIteratorCallbackHandler",
-
 ]

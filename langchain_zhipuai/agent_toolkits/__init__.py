@@ -1,7 +1,3 @@
+from langchain_zhipuai.agent_toolkits.all_tools import AdapterAllTool, BaseToolOutput
 
-from langchain_zhipuai.agent_toolkits.all_tools import BaseToolOutput, AdapterAllTool
-
-__all__ = [
-    "BaseToolOutput",
-    "AdapterAllTool"
-]
+__all__ = ["BaseToolOutput", "AdapterAllTool"]

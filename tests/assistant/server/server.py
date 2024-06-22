@@ -1,30 +1,24 @@
+import logging.config
 import threading
 from typing import List, Tuple
 
-from langchain_zhipuai.agent_toolkits import BaseToolOutput
-from langchain_zhipuai.agents.zhipuai_all_tools import ZhipuAIAllToolsRunnable
-from langchain_zhipuai.agents.zhipuai_all_tools.base import OutputType
-
-from fastapi import FastAPI, Body
+from fastapi import APIRouter, Body, FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import APIRouter, status
+from langchain.agents import tool
+from langchain.tools.shell import ShellTool
+from langchain_core.agents import AgentAction
+from pydantic.v1 import BaseModel, Extra, Field
 from sse_starlette.sse import EventSourceResponse
-
+from uvicorn import Config, Server
 from zhipuai.core.logs import (
     get_config_dict,
     get_log_file,
     get_timestamp_ms,
 )
-from uvicorn import Config, Server
-import logging.config
-from langchain_core.agents import AgentAction
 
-
-from langchain.agents import tool
-
-from langchain.tools.shell import ShellTool
-from pydantic.v1 import BaseModel, Extra, Field
-
+from langchain_zhipuai.agent_toolkits import BaseToolOutput
+from langchain_zhipuai.agents.zhipuai_all_tools import ZhipuAIAllToolsRunnable
+from langchain_zhipuai.agents.zhipuai_all_tools.base import OutputType
 
 
 @tool
@@ -53,31 +47,26 @@ def shell(query: str = Field(description="The command to execute")):
 intermediate_steps: List[Tuple[AgentAction, BaseToolOutput]] = []
 
 
-async def chat(query: str = Body(..., description="用户输入", examples=["帮我计算100+1"]),
-               message_id: str = Body(None, description="数据库消息ID"),
-               history: List = Body(
-                   [],
-                   description="历史对话，设为一个整数可以从数据库中读取历史消息",
-                   examples=[
-                       [
-                           {"role": "user",
-                            "content": "你好"},
-                           {"role": "assistant", "content": "有什么需要帮助的"}
-                       ]
-                   ]
-               )
-               ):
-    '''Agent 对话'''
+async def chat(
+    query: str = Body(..., description="用户输入", examples=["帮我计算100+1"]),
+    message_id: str = Body(None, description="数据库消息ID"),
+    history: List = Body(
+        [],
+        description="历史对话，设为一个整数可以从数据库中读取历史消息",
+        examples=[
+            [
+                {"role": "user", "content": "你好"},
+                {"role": "assistant", "content": "有什么需要帮助的"},
+            ]
+        ],
+    ),
+):
+    """Agent 对话"""
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
         model_name="chatglm3-qingyan-alltools-130b",
         history=history,
         intermediate_steps=intermediate_steps,
-        tools=[
-            {
-                "type": "code_interpreter"
-            },
-            calculate
-        ]
+        tools=[{"type": "code_interpreter"}, calculate],
     )
     chat_iterator = agent_executor.invoke(chat_input=query)
 
@@ -116,7 +105,7 @@ if __name__ == "__main__":
         response_model=OutputType,
         status_code=status.HTTP_200_OK,
         methods=["POST"],
-        description="与llm模型对话(通过LLMChain)"
+        description="与llm模型对话(通过LLMChain)",
     )
     app.include_router(chat_router)
 
@@ -128,12 +117,10 @@ if __name__ == "__main__":
     )
     _server = Server(config)
 
-
     def run_server():
         _server.shutdown_timeout = 2  # 设置为2秒
 
         _server.run()
-
 
     _server_thread = threading.Thread(target=run_server)
     _server_thread.start()

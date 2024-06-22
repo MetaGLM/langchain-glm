@@ -1,10 +1,11 @@
-from typing import Dict, List, Optional, Union, Any
-from typing_extensions import Self
-from abc import abstractmethod
-from zhipuai.core import BaseModel
-from enum import Enum, auto
-import uuid
 import json
+import uuid
+from abc import abstractmethod
+from enum import Enum, auto
+from typing import Any, Dict, List, Optional, Union
+
+from typing_extensions import Self
+from zhipuai.core import BaseModel
 
 
 class MsgType:
@@ -53,7 +54,7 @@ class AllToolsAction(AllToolsBaseComponent):
     run_id: str
     status: int  # AgentStatus
     tool: str
-    tool_input: Union[str, Dict[str,str]]
+    tool_input: Union[str, Dict[str, str]]
     log: str
 
     @classmethod
@@ -110,4 +111,3 @@ class AllToolsLLMStatus(AllToolsBaseComponent):
     @classmethod
     def class_name(cls) -> str:
         return "AllToolsLLMStatus"
-

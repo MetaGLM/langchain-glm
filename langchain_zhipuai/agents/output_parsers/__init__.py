@@ -14,6 +14,4 @@ from langchain_zhipuai.agents.output_parsers.zhipuai_all_tools import (
     ZhipuAiALLToolsAgentOutputParser,
 )
 
-__all__ = [
-    "ZhipuAiALLToolsAgentOutputParser"
-]
+__all__ = ["ZhipuAiALLToolsAgentOutputParser"]

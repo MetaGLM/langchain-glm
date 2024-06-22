@@ -1,27 +1,28 @@
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from langchain_core.agents import AgentAction
-
-from langchain_zhipuai.agent_toolkits import AdapterAllTool
-
-from typing import TYPE_CHECKING, Any, Optional, Union, Dict, Tuple, List
-
 from langchain_core.callbacks import (
+    AsyncCallbackManagerForChainRun,
     AsyncCallbackManagerForToolRun,
-    CallbackManagerForToolRun, AsyncCallbackManagerForChainRun,
+    CallbackManagerForToolRun,
 )
 
-from langchain_zhipuai.agent_toolkits.all_tools.tool import BaseToolOutput, AllToolExecutor
+from langchain_zhipuai.agent_toolkits import AdapterAllTool
+from langchain_zhipuai.agent_toolkits.all_tools.tool import (
+    AllToolExecutor,
+    BaseToolOutput,
+)
 
 
 class CodeInterpreterToolOutput(BaseToolOutput):
     platform_params: Dict[str, Any]
 
     def __init__(
-            self,
-            data: Any,
-            platform_params: Dict[str, Any],
-            **extras: Any,
+        self,
+        data: Any,
+        platform_params: Dict[str, Any],
+        **extras: Any,
     ) -> None:
         super().__init__(data, "", "", **extras)
         self.platform_params = platform_params
@@ -30,22 +31,26 @@ class CodeInterpreterToolOutput(BaseToolOutput):
 @dataclass
 class CodeInterpreterAllToolExecutor(AllToolExecutor):
     """platform adapter tool for code interpreter tool"""
+
     name: str
 
     def run(
-            self,
-            tool: str,
-            tool_input: str,
-            log: str,
-            outputs: List[Union[str, dict]] = None,
-            run_manager: Optional[CallbackManagerForToolRun] = None,
+        self,
+        tool: str,
+        tool_input: str,
+        log: str,
+        outputs: List[Union[str, dict]] = None,
+        run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> CodeInterpreterToolOutput:
-
         if outputs is None or str(outputs).strip() == "":
-            if 'auto' == self.platform_params.get('sandbox', 'auto'):
-                raise ValueError(f"Tool {self.name} sandbox is auto , but log is None, is server error")
-            elif 'none' == self.platform_params.get('sandbox', 'auto'):
-                raise NotImplementedError(f"Tool {self.name} sandbox not auto , implement it")
+            if "auto" == self.platform_params.get("sandbox", "auto"):
+                raise ValueError(
+                    f"Tool {self.name} sandbox is auto , but log is None, is server error"
+                )
+            elif "none" == self.platform_params.get("sandbox", "auto"):
+                raise NotImplementedError(
+                    f"Tool {self.name} sandbox not auto , implement it"
+                )
 
         return CodeInterpreterToolOutput(
             data=f"""Access：{tool}, Message: {tool_input},{log}""",
@@ -53,19 +58,23 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
         )
 
     async def arun(
-            self,
-            tool: str,
-            tool_input: str,
-            log: str,
-            outputs: List[Union[str, dict]] = None,
-            run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
+        self,
+        tool: str,
+        tool_input: str,
+        log: str,
+        outputs: List[Union[str, dict]] = None,
+        run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> CodeInterpreterToolOutput:
         """Use the tool asynchronously."""
         if outputs is None or str(outputs).strip() == "":
-            if 'auto' == self.platform_params.get('sandbox', 'auto'):
-                raise ValueError(f"Tool {self.name} sandbox is auto , but log is None, is server error")
-            elif 'none' == self.platform_params.get('sandbox', 'auto'):
-                raise NotImplementedError(f"Tool {self.name} sandbox not auto , implement it")
+            if "auto" == self.platform_params.get("sandbox", "auto"):
+                raise ValueError(
+                    f"Tool {self.name} sandbox is auto , but log is None, is server error"
+                )
+            elif "none" == self.platform_params.get("sandbox", "auto"):
+                raise NotImplementedError(
+                    f"Tool {self.name} sandbox not auto , implement it"
+                )
 
         return CodeInterpreterToolOutput(
             data=f"""Access：{tool}, Message: {tool_input},{log}""",
@@ -74,10 +83,13 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
 
 
 class CodeInterpreterAdapterAllTool(AdapterAllTool[CodeInterpreterAllToolExecutor]):
-
     @classmethod
     def get_type(cls) -> str:
         return "CodeInterpreterAdapterAllTool"
 
-    def _build_adapter_all_tool(self, platform_params: Dict[str, Any]) -> CodeInterpreterAllToolExecutor:
-        return CodeInterpreterAllToolExecutor(name="code_interpreter", platform_params=platform_params)
+    def _build_adapter_all_tool(
+        self, platform_params: Dict[str, Any]
+    ) -> CodeInterpreterAllToolExecutor:
+        return CodeInterpreterAllToolExecutor(
+            name="code_interpreter", platform_params=platform_params
+        )

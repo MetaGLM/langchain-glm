@@ -4,7 +4,6 @@ import streamlit as st
 # from chatchat.webui_pages.openai_plugins import openai_plugins_page
 from streamlit_option_menu import option_menu
 
-
 from tests.assistant.client import ZhipuAIPluginsClient
 from tests.assistant.dialogue import dialogue_page
 from tests.assistant.utils import get_img_base64
@@ -17,9 +16,8 @@ if __name__ == "__main__":
         "assistant",
         get_img_base64("chatchat_icon_blue_square_v2.png"),
         initial_sidebar_state="expanded",
-        menu_items={
-        },
-        layout="wide"
+        menu_items={},
+        layout="wide",
     )
 
     # use the following code to set the app to wide mode and the html markdown to increase the sidebar width
@@ -44,7 +42,6 @@ if __name__ == "__main__":
         },
     }
     with st.sidebar:
-
         options = list(pages)
         icons = [x["icon"] for x in pages.values()]
 

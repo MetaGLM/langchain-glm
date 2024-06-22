@@ -1,38 +1,44 @@
-from datetime import datetime
-import uuid
 import json
-from typing import List, Dict, cast, TypeVar, Type
+import uuid
+from datetime import datetime
+from typing import Dict, List, Type, TypeVar, cast
 
 import streamlit as st
 import streamlit_antd_components as sac
 from streamlit_chatbox import *
 from streamlit_extras.bottom_container import bottom
+from zhipuai.core._base_models import construct_type
 
-from langchain_zhipuai.agents.zhipuai_all_tools.base import AllToolsAction, AllToolsActionToolStart, AllToolsFinish, \
-    AllToolsActionToolEnd, AllToolsLLMStatus
+from langchain_zhipuai.agents.zhipuai_all_tools.base import (
+    AllToolsAction,
+    AllToolsActionToolEnd,
+    AllToolsActionToolStart,
+    AllToolsFinish,
+    AllToolsLLMStatus,
+)
 from langchain_zhipuai.callbacks.agent_callback_handler import AgentStatus
-
 from tests.assistant.client import ZhipuAIPluginsClient
 from tests.assistant.utils import get_img_base64
-from zhipuai.core._base_models import construct_type
 
 OutputType = TypeVar(
     "OutputType",
     bound="Union[AllToolsAction,AllToolsActionToolStart,AllToolsActionToolEnd,AllToolsFinish,AllToolsLLMStatus]",
 )
-chat_box = ChatBox(
-    assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2.png")
-)
+chat_box = ChatBox(assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2.png"))
 
 
 def save_session(conv_name: str = None):
     """save session state to chat context"""
-    chat_box.context_from_session(conv_name, exclude=["selected_page", "prompt", "cur_conv_name"])
+    chat_box.context_from_session(
+        conv_name, exclude=["selected_page", "prompt", "cur_conv_name"]
+    )
 
 
 def restore_session(conv_name: str = None):
     """restore sesstion state from chat context"""
-    chat_box.context_to_session(conv_name, exclude=["selected_page", "prompt", "cur_conv_name"])
+    chat_box.context_to_session(
+        conv_name, exclude=["selected_page", "prompt", "cur_conv_name"]
+    )
 
 
 def rerun():
@@ -43,14 +49,18 @@ def rerun():
     st.rerun()
 
 
-def get_messages_history(history_len: int = 10, content_in_expander: bool = False) -> List[Dict]:
+def get_messages_history(
+    history_len: int = 10, content_in_expander: bool = False
+) -> List[Dict]:
     """
     返回消息历史。
     content_in_expander控制是否返回expander元素中的内容，一般导出的时候可以选上，传入LLM的history不需要
     """
 
     def filter(msg):
-        content = [x for x in msg["elements"] if x._output_method in ["markdown", "text"]]
+        content = [
+            x for x in msg["elements"] if x._output_method in ["markdown", "text"]
+        ]
         if not content_in_expander:
             content = [x for x in content if not x._in_expander]
         content = [x.content for x in content]
@@ -76,7 +86,12 @@ def add_conv(name: str = ""):
                 break
             i += 1
     if name in conv_names:
-        sac.alert("创建新会话出错", f"该会话名称 “{name}” 已存在", color="error", closable=True)
+        sac.alert(
+            "创建新会话出错",
+            f"该会话名称 “{name}” 已存在",
+            color="error",
+            closable=True,
+        )
     else:
         chat_box.use_chat_name(name)
         st.session_state["cur_conv_name"] = name
@@ -86,9 +101,13 @@ def del_conv(name: str = None):
     conv_names = chat_box.get_chat_names()
     name = name or chat_box.cur_chat_name
     if len(conv_names) == 1:
-        sac.alert("删除会话出错", f"这是最后一个会话，无法删除", color="error", closable=True)
+        sac.alert(
+            "删除会话出错", f"这是最后一个会话，无法删除", color="error", closable=True
+        )
     elif not name or name not in conv_names:
-        sac.alert("删除会话出错", f"无效的会话名称：“{name}”", color="error", closable=True)
+        sac.alert(
+            "删除会话出错", f"无效的会话名称：“{name}”", color="error", closable=True
+        )
     else:
         chat_box.del_chat_name(name)
         restore_session()
@@ -103,9 +122,7 @@ def list_tools():
     return {}
 
 
-def dialogue_page(
-        client: ZhipuAIPluginsClient
-):
+def dialogue_page(client: ZhipuAIPluginsClient):
     ctx = chat_box.context
     ctx.setdefault("uid", uuid.uuid4().hex)
     ctx.setdefault("file_chat_id", None)
@@ -141,8 +158,12 @@ def dialogue_page(
                 save_session(conversation_name)
                 restore_session(st.session_state.cur_conv_name)
 
-            conversation_name = sac.buttons(conv_names, label="当前会话：", key="cur_conv_name",
-                                            on_change=on_conv_change, )
+            conversation_name = sac.buttons(
+                conv_names,
+                label="当前会话：",
+                key="cur_conv_name",
+                on_change=on_conv_change,
+            )
             chat_box.use_chat_name(conversation_name)
             conversation_id = chat_box.context["uid"]
             if cols[0].button("新建", on_click=add_conv):
@@ -179,53 +200,78 @@ def dialogue_page(
             if not started:
                 chat_box.update_msg("", streaming=False)
                 started = True
-            if 'AllToolsAction' == item['class_name']:
-
+            if "AllToolsAction" == item["class_name"]:
                 cast_type: Type[OutputType] = AllToolsAction
                 item = cast(OutputType, construct_type(type_=cast_type, value=item))
                 chat_box.insert_msg(f"")
 
-            elif 'AllToolsFinish' == item['class_name']:
+            elif "AllToolsFinish" == item["class_name"]:
                 cast_type: Type[OutputType] = AllToolsFinish
                 item = cast(OutputType, construct_type(type_=cast_type, value=item))
-                chat_box.update_msg("AllToolsFinish:"+item.log )
-            elif 'AllToolsActionToolStart' == item['class_name']:
-
+                chat_box.update_msg("AllToolsFinish:" + item.log)
+            elif "AllToolsActionToolStart" == item["class_name"]:
                 cast_type: Type[OutputType] = AllToolsActionToolStart
                 item = cast(OutputType, construct_type(type_=cast_type, value=item))
                 formatted_data = {
                     "Function": item.tool,
-                    "function_input": item.tool_input
+                    "function_input": item.tool_input,
                 }
-                formatted_json = json.dumps(formatted_data, indent=2, ensure_ascii=False)
+                formatted_json = json.dumps(
+                    formatted_data, indent=2, ensure_ascii=False
+                )
                 text = """\n```{}\n```\n""".format(formatted_json)
                 function_call = text
                 chat_box.insert_msg(  # TODO: insert text directly not shown
-                    Markdown(text, title=f"正在解读{item.tool}工具输出结果...", in_expander=True, expanded=True, state="running"))
+                    Markdown(
+                        text,
+                        title=f"正在解读{item.tool}工具输出结果...",
+                        in_expander=True,
+                        expanded=True,
+                        state="running",
+                    )
+                )
 
-            elif 'AllToolsActionToolEnd' == item['class_name']:
-
+            elif "AllToolsActionToolEnd" == item["class_name"]:
                 cast_type: Type[OutputType] = AllToolsActionToolEnd
                 item = cast(OutputType, construct_type(type_=cast_type, value=item))
 
-
                 text = """\n```\nObservation:\n{}\n```\n""".format(item.tool_output)
 
-                chat_box.update_msg(function_call+"\n"+ text,title=f"Function call {item.tool}.",
-                                    streaming=False, expanded=False, state="complete")
+                chat_box.update_msg(
+                    function_call + "\n" + text,
+                    title=f"Function call {item.tool}.",
+                    streaming=False,
+                    expanded=False,
+                    state="complete",
+                )
 
-            elif 'AllToolsLLMStatus' == item['class_name']:
+            elif "AllToolsLLMStatus" == item["class_name"]:
                 cast_type: Type[OutputType] = AllToolsLLMStatus
                 item = cast(OutputType, construct_type(type_=cast_type, value=item))
                 if item.status == AgentStatus.error:
                     st.error(item.text)
                 elif item.status == AgentStatus.chain_start:
-                    chat_box.insert_msg(Markdown(text, title=f"chain_start...", in_expander=True, expanded=True, state="complete"))
+                    chat_box.insert_msg(
+                        Markdown(
+                            text,
+                            title=f"chain_start...",
+                            in_expander=True,
+                            expanded=True,
+                            state="complete",
+                        )
+                    )
 
                 elif item.status == AgentStatus.llm_start:
                     text = item.text or ""
-                    chat_box.insert_msg(Markdown(text, title=f"llm_start...", in_expander=True, expanded=True, state="running"))
-
+                    chat_box.insert_msg(
+                        Markdown(
+                            text,
+                            title=f"llm_start...",
+                            in_expander=True,
+                            expanded=True,
+                            state="running",
+                        )
+                    )
 
                 elif item.status == AgentStatus.llm_new_token:
                     text += item.text
@@ -233,20 +279,24 @@ def dialogue_page(
                 elif item.status == AgentStatus.llm_end:
                     chat_box.update_msg(item.text, streaming=False, state="complete")
                 elif item.status == AgentStatus.chain_end:
-
-                    chat_box.update_msg(item.text, title=f"chain_end...",
-                                        streaming=False, expanded=False, state="complete")
+                    chat_box.update_msg(
+                        item.text,
+                        title=f"chain_end...",
+                        streaming=False,
+                        expanded=False,
+                        state="complete",
+                    )
                     chat_box.insert_msg(item.text)
                 else:
-                    st.write("item.status :"+item.status + item.text)
+                    st.write("item.status :" + item.status + item.text)
 
     now = datetime.now()
     with tab1:
         cols = st.columns(2)
         export_btn = cols[0]
         if cols[1].button(
-                "清空对话",
-                use_container_width=True,
+            "清空对话",
+            use_container_width=True,
         ):
             chat_box.reset_history()
             rerun()

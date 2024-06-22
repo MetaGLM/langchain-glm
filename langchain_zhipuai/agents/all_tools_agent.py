@@ -14,6 +14,8 @@ from typing import (
     Optional,
 )
 
+from langchain.agents.agent import Agent, AgentExecutor, AgentOutputParser
+from langchain.agents.tools import InvalidTool
 from langchain_core.agents import AgentAction, AgentFinish, AgentStep
 from langchain_core.callbacks import (
     AsyncCallbackManagerForChainRun,
@@ -23,26 +25,23 @@ from langchain_core.callbacks import (
     CallbackManagerForToolRun,
     Callbacks,
 )
-from langchain.agents.tools import InvalidTool
+from langchain_core.tools import BaseTool
 
 from langchain_zhipuai.agent_toolkits import AdapterAllTool
-
-from langchain_core.tools import BaseTool
-from langchain.agents.agent import Agent, AgentExecutor, AgentOutputParser
-
-from langchain_zhipuai.agent_toolkits.all_tools.struct_type import AdapterAllToolStructType
+from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
+    AdapterAllToolStructType,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
-
     def _perform_agent_action(
-            self,
-            name_to_tool_map: Dict[str, BaseTool],
-            color_mapping: Dict[str, str],
-            agent_action: AgentAction,
-            run_manager: Optional[CallbackManagerForChainRun] = None,
+        self,
+        name_to_tool_map: Dict[str, BaseTool],
+        color_mapping: Dict[str, str],
+        agent_action: AgentAction,
+        run_manager: Optional[CallbackManagerForChainRun] = None,
     ) -> AgentStep:
         if run_manager:
             run_manager.on_agent_action(agent_action, color="green")
@@ -57,7 +56,7 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
             # We then call the tool on the tool input to get an observation
             # TODO: platform adapter tool for all  tools,
             #       view tools binding langchain_zhipuai/agents/zhipuai_all_tools/base.py:188
-            if 'code_interpreter' in agent_action.tool:
+            if "code_interpreter" in agent_action.tool:
                 observation = tool.run(
                     {
                         "agent_action": agent_action,
@@ -90,11 +89,11 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
         return AgentStep(action=agent_action, observation=observation)
 
     async def _aperform_agent_action(
-            self,
-            name_to_tool_map: Dict[str, BaseTool],
-            color_mapping: Dict[str, str],
-            agent_action: AgentAction,
-            run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
+        self,
+        name_to_tool_map: Dict[str, BaseTool],
+        color_mapping: Dict[str, str],
+        agent_action: AgentAction,
+        run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
     ) -> AgentStep:
         if run_manager:
             await run_manager.on_agent_action(

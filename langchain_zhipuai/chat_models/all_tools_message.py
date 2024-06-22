@@ -1,6 +1,7 @@
 import json
 from typing import Any, Dict, List, Literal, Union
 
+from langchain_core.messages import AIMessage
 from langchain_core.messages.base import (
     BaseMessage,
     BaseMessageChunk,
@@ -19,23 +20,23 @@ from langchain_core.utils.json import (
     parse_partial_json,
 )
 
-from langchain_core.messages import (
-    AIMessage
-)
-
 
 def default_all_tool_chunk_parser(raw_tool_calls: List[dict]) -> List[ToolCallChunk]:
     """Best-effort parsing of all tool chunks."""
     tool_call_chunks = []
     for tool_call in raw_tool_calls:
-        if "function" in tool_call and tool_call['function'] is not None:
+        if "function" in tool_call and tool_call["function"] is not None:
             function_args = tool_call["function"]["arguments"]
             function_name = tool_call["function"]["name"]
-        elif "code_interpreter" in tool_call and tool_call['code_interpreter'] is not None:
-            function_args = json.dumps(tool_call["code_interpreter"], ensure_ascii=False)
+        elif (
+            "code_interpreter" in tool_call
+            and tool_call["code_interpreter"] is not None
+        ):
+            function_args = json.dumps(
+                tool_call["code_interpreter"], ensure_ascii=False
+            )
             function_name = "code_interpreter"
         else:
-
             function_args = None
             function_name = None
         parsed = ToolCallChunk(
@@ -76,9 +77,9 @@ class ALLToolsMessageChunk(AIMessage, BaseMessageChunk):
     def _backwards_compat_tool_calls(cls, values: dict) -> dict:
         raw_tool_calls = values.get("additional_kwargs", {}).get("tool_calls")
         tool_calls = (
-                values.get("tool_calls")
-                or values.get("invalid_tool_calls")
-                or values.get("tool_call_chunks")
+            values.get("tool_calls")
+            or values.get("invalid_tool_calls")
+            or values.get("tool_call_chunks")
         )
         if raw_tool_calls and not tool_calls:
             try:
@@ -104,13 +105,13 @@ class ALLToolsMessageChunk(AIMessage, BaseMessageChunk):
         invalid_tool_calls = []
         for chunk in values["tool_call_chunks"]:
             try:
-                if 'code_interpreter' in chunk["name"]:
+                if "code_interpreter" in chunk["name"]:
                     args_ = parse_partial_json(chunk["args"])
 
                     if not isinstance(args_, dict):
                         raise ValueError("Malformed args.")
 
-                    if 'outputs' in args_:
+                    if "outputs" in args_:
                         tool_calls.append(
                             ToolCall(
                                 name=chunk["name"] or "",
@@ -129,7 +130,6 @@ class ALLToolsMessageChunk(AIMessage, BaseMessageChunk):
                             )
                         )
                 else:
-
                     args_ = parse_partial_json(chunk["args"])
                     if isinstance(args_, dict):
                         tool_calls.append(

@@ -12,28 +12,41 @@ from typing import (
     Sequence,
     Tuple,
     Type,
-    Union, )
+    Union,
+)
+
 from langchain import hub
 from langchain.agents import AgentExecutor
-
 from langchain_core.agents import AgentAction
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.messages import convert_to_messages
 from langchain_core.runnables import RunnableConfig, RunnableSerializable
-from langchain_core.tools import BaseTool
 from langchain_core.runnables.base import RunnableBindingBase
+from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from pydantic.v1 import BaseModel, Field, validator
 
-from langchain_zhipuai.agent_toolkits.all_tools.registry import TOOL_STRUCT_TYPE_TO_TOOL_CLASS
-from langchain_zhipuai.agent_toolkits.all_tools.tool import AdapterAllTool, BaseToolOutput
+from langchain_zhipuai.agent_toolkits.all_tools.registry import (
+    TOOL_STRUCT_TYPE_TO_TOOL_CLASS,
+)
+from langchain_zhipuai.agent_toolkits.all_tools.tool import (
+    AdapterAllTool,
+    BaseToolOutput,
+)
 from langchain_zhipuai.agents.all_tools_agent import ZhipuAiAllToolsAgentExecutor
 from langchain_zhipuai.agents.all_tools_bind.base import create_zhipuai_tools_agent
-from langchain_zhipuai.agents.format_scratchpad.all_tools import format_to_zhipuai_all_tool_messages
+from langchain_zhipuai.agents.format_scratchpad.all_tools import (
+    format_to_zhipuai_all_tool_messages,
+)
 from langchain_zhipuai.agents.output_parsers import ZhipuAiALLToolsAgentOutputParser
-from langchain_zhipuai.agents.zhipuai_all_tools.schema import AllToolsAction, AllToolsActionToolStart, \
-    AllToolsActionToolEnd, AllToolsFinish, AllToolsLLMStatus
+from langchain_zhipuai.agents.zhipuai_all_tools.schema import (
+    AllToolsAction,
+    AllToolsActionToolEnd,
+    AllToolsActionToolStart,
+    AllToolsFinish,
+    AllToolsLLMStatus,
+)
 from langchain_zhipuai.callbacks.agent_callback_handler import (
     AgentExecutorAsyncIteratorCallbackHandler,
     AgentStatus,
@@ -45,21 +58,19 @@ logger = logging.getLogger()
 
 
 def _is_assistants_builtin_tool(
-        tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
+    tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
 ) -> bool:
     """platform tools built-in"""
-    assistants_builtin_tools = (
-        "code_interpreter",
-    )
+    assistants_builtin_tools = ("code_interpreter",)
     return (
-            isinstance(tool, dict)
-            and ("type" in tool)
-            and (tool["type"] in assistants_builtin_tools)
+        isinstance(tool, dict)
+        and ("type" in tool)
+        and (tool["type"] in assistants_builtin_tools)
     )
 
 
 def _get_assistants_tool(
-        tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
+    tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
 ) -> Dict[str, Any]:
     """Convert a raw function/class to an ZhipuAI tool.
 
@@ -73,33 +84,30 @@ def _get_assistants_tool(
 
 
 def _agents_registry(
-        llm: BaseLanguageModel,
-        llm_with_all_tools: RunnableBindingBase = None,
-        tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = [],
-        callbacks: List[BaseCallbackHandler] = [],
-        verbose: bool = False,
+    llm: BaseLanguageModel,
+    llm_with_all_tools: RunnableBindingBase = None,
+    tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = [],
+    callbacks: List[BaseCallbackHandler] = [],
+    verbose: bool = False,
 ):
     if llm_with_all_tools:
-
         prompt = hub.pull("zhipuai-all-tools-chat/zhipuai-all-tools-agent")
         agent = create_zhipuai_tools_agent(
-            prompt=prompt,
-            llm_with_all_tools=llm_with_all_tools
+            prompt=prompt, llm_with_all_tools=llm_with_all_tools
         )
     else:
-
         prompt = hub.pull("zhipuai-all-tools-chat/zhipuai-all-tools-chat")
-        agent = (
-                prompt
-                | llm
-                | ZhipuAiALLToolsAgentOutputParser()
-        )
+        agent = prompt | llm | ZhipuAiALLToolsAgentOutputParser()
 
     # AgentExecutor._aperform_agent_action = _aperform_agent_action
     # AgentExecutor._perform_agent_action = _perform_agent_action
 
     agent_executor = ZhipuAiAllToolsAgentExecutor(
-        agent=agent, tools=tools, verbose=verbose, callbacks=callbacks, return_intermediate_steps=True
+        agent=agent,
+        tools=tools,
+        verbose=verbose,
+        callbacks=callbacks,
+        return_intermediate_steps=True,
     )
 
     return agent_executor
@@ -144,20 +152,21 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
     class Config:
         arbitrary_types_allowed = True
 
-    @validator('intermediate_steps', pre=True, each_item=True, allow_reuse=True)
+    @validator("intermediate_steps", pre=True, each_item=True, allow_reuse=True)
     def check_intermediate_steps(cls, v):
-
         return v
 
     @staticmethod
-    def paser_all_tools(tool: Dict[str, Any], callbacks: List[BaseCallbackHandler] = []) -> AdapterAllTool:
+    def paser_all_tools(
+        tool: Dict[str, Any], callbacks: List[BaseCallbackHandler] = []
+    ) -> AdapterAllTool:
         platform_params = {}
-        if tool['type'] in tool:
-            platform_params = tool[tool['type']]
+        if tool["type"] in tool:
+            platform_params = tool[tool["type"]]
 
-        if tool['type'] in TOOL_STRUCT_TYPE_TO_TOOL_CLASS:
-            all_tool = TOOL_STRUCT_TYPE_TO_TOOL_CLASS[tool['type']](
-                name=tool['type'], platform_params=platform_params, callbacks=callbacks
+        if tool["type"] in TOOL_STRUCT_TYPE_TO_TOOL_CLASS:
+            all_tool = TOOL_STRUCT_TYPE_TO_TOOL_CLASS[tool["type"]](
+                name=tool["type"], platform_params=platform_params, callbacks=callbacks
             )
             return all_tool
         else:
@@ -165,14 +174,16 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
 
     @classmethod
     def create_agent_executor(
-            cls,
-            model_name: str,
-            *,
-            intermediate_steps: List[Tuple[AgentAction, BaseToolOutput]] = [],
-            history: List[Union[List, Tuple, Dict]] = [],
-            tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]] = None,
-            temperature: float = 0.7,
-            **kwargs: Any,
+        cls,
+        model_name: str,
+        *,
+        intermediate_steps: List[Tuple[AgentAction, BaseToolOutput]] = [],
+        history: List[Union[List, Tuple, Dict]] = [],
+        tools: Sequence[
+            Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]
+        ] = None,
+        temperature: float = 0.7,
+        **kwargs: Any,
     ) -> "ZhipuAIAllToolsRunnable":
         """Create an ZhipuAI Assistant and instantiate the Runnable."""
 
@@ -198,7 +209,12 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
             )
 
             temp_tools.extend(
-                [t.copy(update={"callbacks": callbacks}) for t in tools if not _is_assistants_builtin_tool(t)])
+                [
+                    t.copy(update={"callbacks": callbacks})
+                    for t in tools
+                    if not _is_assistants_builtin_tool(t)
+                ]
+            )
 
             assistants_builtin_tools = []
             for t in tools:
@@ -210,10 +226,11 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
             temp_tools.extend(assistants_builtin_tools)
 
         agent_executor = _agents_registry(
-            llm=llm, callbacks=callbacks,
+            llm=llm,
+            callbacks=callbacks,
             tools=temp_tools,
             llm_with_all_tools=llm_with_all_tools,
-            verbose=True
+            verbose=True,
         )
         return cls(
             model_name=model_name,
@@ -224,8 +241,9 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
             **kwargs,
         )
 
-    def invoke(self, chat_input: str, config: Optional[RunnableConfig] = None) -> AsyncIterable[OutputType]:
-
+    def invoke(
+        self, chat_input: str, config: Optional[RunnableConfig] = None
+    ) -> AsyncIterable[OutputType]:
         async def chat_iterator() -> AsyncIterable[OutputType]:
             history_message = []
             if self.history:
@@ -242,7 +260,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                             "chat_history": history_message,
                             "agent_scratchpad": lambda x: format_to_zhipuai_all_tool_messages(
                                 self.intermediate_steps
-                            )
+                            ),
                         }
                     ),
                     self.callback.done,
@@ -273,9 +291,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                     )
                 elif data["status"] == AgentStatus.agent_action:
                     class_status = AllToolsAction(
-                        run_id=data["run_id"],
-                        status=data["status"],
-                        **data["action"]
+                        run_id=data["run_id"], status=data["status"], **data["action"]
                     )
 
                 elif data["status"] == AgentStatus.tool_start:
@@ -288,7 +304,6 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
 
                 elif data["status"] in [AgentStatus.tool_end]:
                     class_status = AllToolsActionToolEnd(
-
                         run_id=data["run_id"],
                         status=data["status"],
                         tool=data["tool"],
@@ -305,7 +320,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                     class_status = AllToolsLLMStatus(
                         run_id=data["run_id"],
                         status=data["status"],
-                        text=data["outputs"]['output'],
+                        text=data["outputs"]["output"],
                     )
 
                 elif data["status"] == AgentStatus.error:
@@ -324,7 +339,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                     class_status = AllToolsLLMStatus(
                         run_id=data["run_id"],
                         status=data["status"],
-                        text=data["outputs"]['output'],
+                        text=data["outputs"]["output"],
                     )
 
                 yield class_status
@@ -332,14 +347,10 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
             await task
 
             if self.callback.out:
-                self.history.append({
-                    "role": "user",
-                    "content": chat_input
-                })
-                self.history.append({
-                    "role": "assistant",
-                    "content": self.callback.outputs['output']
-                })
+                self.history.append({"role": "user", "content": chat_input})
+                self.history.append(
+                    {"role": "assistant", "content": self.callback.outputs["output"]}
+                )
                 self.intermediate_steps.extend(self.callback.intermediate_steps)
 
         return chat_iterator()

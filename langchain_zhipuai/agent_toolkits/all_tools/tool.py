@@ -2,8 +2,24 @@
 
 from __future__ import annotations
 
+import json
+import logging
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Optional, Union, Dict, Tuple
+from dataclasses import dataclass
+from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
+
+from dataclasses_json import DataClassJsonMixin
 from langchain_core.agents import AgentAction, AgentFinish, AgentStep
 from langchain_core.callbacks import (
     AsyncCallbackManagerForChainRun,
@@ -13,14 +29,8 @@ from langchain_core.callbacks import (
     CallbackManagerForToolRun,
     Callbacks,
 )
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Dict, Generic, Optional, Type, TypeVar
-from pydantic.v1 import Extra, Field
-from dataclasses_json import DataClassJsonMixin
 from langchain_core.tools import BaseTool
-import json
-import logging
+from pydantic.v1 import Extra, Field
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +44,11 @@ class BaseToolOutput:
     """
 
     def __init__(
-            self,
-            data: Any,
-            format: str = "",
-            data_alias: str = "",
-            **extras: Any,
+        self,
+        data: Any,
+        format: str = "",
+        data_alias: str = "",
+        **extras: Any,
     ) -> None:
         self.data = data
         self.format = format
@@ -58,16 +68,14 @@ class AllToolExecutor(DataClassJsonMixin):
     platform_params: Dict[str, Any]
 
     @abstractmethod
-    def run(self,
-            *args: Any,
-            **kwargs: Any) -> BaseToolOutput:
+    def run(self, *args: Any, **kwargs: Any) -> BaseToolOutput:
         pass
 
     @abstractmethod
     async def arun(
-            self,
-            *args: Any,
-            **kwargs: Any,
+        self,
+        *args: Any,
+        **kwargs: Any,
     ) -> BaseToolOutput:
         pass
 
@@ -77,6 +85,7 @@ E = TypeVar("E", bound=AllToolExecutor)
 
 class AdapterAllTool(BaseTool, Generic[E]):
     """platform adapter tool for all tools."""
+
     name: str
     description: str
 
@@ -85,11 +94,13 @@ class AdapterAllTool(BaseTool, Generic[E]):
     adapter_all_tool: E
 
     def __init__(self, name: str, platform_params: Dict[str, Any], **data: Any):
-
-        super().__init__(name=name, description=f"platform adapter tool for {name}",
-                         platform_params=platform_params,
-                         adapter_all_tool=self._build_adapter_all_tool(platform_params),
-                         **data)
+        super().__init__(
+            name=name,
+            description=f"platform adapter tool for {name}",
+            platform_params=platform_params,
+            adapter_all_tool=self._build_adapter_all_tool(platform_params),
+            **data,
+        )
 
     @abstractmethod
     def _build_adapter_all_tool(self, platform_params: Dict[str, Any]) -> E:
@@ -125,12 +136,12 @@ class AdapterAllTool(BaseTool, Generic[E]):
             return (), tool_input
 
     def _run(
-            self,
-            agent_action: AgentAction,
-            run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
-            **tool_run_kwargs: Any,
+        self,
+        agent_action: AgentAction,
+        run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
+        **tool_run_kwargs: Any,
     ) -> Any:
-        if 'code_interpreter' in agent_action.tool:
+        if "code_interpreter" in agent_action.tool:
             return self.adapter_all_tool.run(
                 {
                     "tool": agent_action.tool,
@@ -146,12 +157,12 @@ class AdapterAllTool(BaseTool, Generic[E]):
             raise KeyError()
 
     async def _arun(
-            self,
-            agent_action: AgentAction,
-            run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
-            **tool_run_kwargs: Any,
+        self,
+        agent_action: AgentAction,
+        run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
+        **tool_run_kwargs: Any,
     ) -> Any:
-        if 'code_interpreter' in agent_action.tool:
+        if "code_interpreter" in agent_action.tool:
             return await self.adapter_all_tool.arun(
                 **{
                     "tool": agent_action.tool,

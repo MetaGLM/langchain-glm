@@ -1,7 +1,9 @@
 # ruff: noqa: E402
 """Main entrypoint into package."""
-from langchain_zhipuai.agents import ZhipuAIAllToolsRunnable
 from importlib import metadata
+
+from langchain_zhipuai.agents import ZhipuAIAllToolsRunnable
+
 try:
     __version__ = metadata.version(__package__)
 except metadata.PackageNotFoundError:
@@ -10,8 +12,6 @@ except metadata.PackageNotFoundError:
 del metadata  # optional, avoids polluting the results of dir(__package__)
 
 
-
 __all__ = [
     "ZhipuAIAllToolsRunnable",
 ]
-

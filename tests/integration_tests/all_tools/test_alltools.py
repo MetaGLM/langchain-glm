@@ -2,6 +2,9 @@ import logging
 import logging.config
 
 import pytest
+from langchain.agents import tool
+from langchain.tools.shell import ShellTool
+from pydantic.v1 import BaseModel, Extra, Field
 
 from langchain_zhipuai.agent_toolkits import BaseToolOutput
 from langchain_zhipuai.agents.zhipuai_all_tools import (
@@ -17,12 +20,6 @@ from langchain_zhipuai.agents.zhipuai_all_tools.base import (
 from langchain_zhipuai.callbacks.agent_callback_handler import (
     AgentStatus,
 )
-
-from langchain.agents import tool
-
-from langchain.tools.shell import ShellTool
-from pydantic.v1 import BaseModel, Extra, Field
-
 
 
 @tool
@@ -54,16 +51,11 @@ async def test_all_tools(logging_conf):
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
         model_name="tob-alltools-api-dev",
-        tools=[
-            {
-                "type": "code_interpreter"
-            },
-            calculate,
-            shell
-
-        ]
+        tools=[{"type": "code_interpreter"}, calculate, shell],
     )
-    chat_iterator = agent_executor.invoke(chat_input="看下本地文件有哪些，告诉我你用的是什么文件,查看当前目录")
+    chat_iterator = agent_executor.invoke(
+        chat_input="看下本地文件有哪些，告诉我你用的是什么文件,查看当前目录"
+    )
     async for item in chat_iterator:
         if isinstance(item, AllToolsAction):
             print("AllToolsAction:" + str(item.to_json()))
@@ -96,4 +88,3 @@ async def test_all_tools(logging_conf):
         elif isinstance(item, AllToolsLLMStatus):
             if item.status == AgentStatus.llm_end:
                 print("llm_end:" + item.text)
-

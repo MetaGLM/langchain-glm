@@ -1,6 +1,8 @@
 import logging
 from functools import lru_cache
-from typing import Dict, List, Tuple, Union, Any
+from typing import Any, Dict, List, Tuple, Union
+
+from langchain.prompts.chat import ChatMessagePromptTemplate
 from langchain_core.messages import (
     AIMessage,
     AIMessageChunk,
@@ -17,7 +19,6 @@ from langchain_core.messages import (
     ToolMessage,
     ToolMessageChunk,
 )
-from langchain.prompts.chat import ChatMessagePromptTemplate
 from pydantic.v1 import BaseModel, Field
 
 logger = logging.getLogger()

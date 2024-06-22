@@ -1,6 +1,7 @@
 import json
 from typing import List, Sequence, Tuple
 
+from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain_core.agents import AgentAction
 from langchain_core.messages import (
     AIMessage,
@@ -8,10 +9,10 @@ from langchain_core.messages import (
     ToolMessage,
 )
 
-from langchain.agents.output_parsers.tools import ToolAgentAction
-
 from langchain_zhipuai.agent_toolkits import BaseToolOutput
-from langchain_zhipuai.agent_toolkits.all_tools.code_interpreter_tool import CodeInterpreterToolOutput
+from langchain_zhipuai.agent_toolkits.all_tools.code_interpreter_tool import (
+    CodeInterpreterToolOutput,
+)
 from langchain_zhipuai.agents.output_parsers.tools import CodeInterpreterAgentAction
 
 
@@ -55,14 +56,14 @@ def format_to_zhipuai_all_tool_messages(
     for agent_action, observation in intermediate_steps:
         if isinstance(agent_action, CodeInterpreterAgentAction):
             if isinstance(observation, CodeInterpreterToolOutput):
-
-                if 'auto' == observation.platform_params.get('sandbox', 'auto'):
-
+                if "auto" == observation.platform_params.get("sandbox", "auto"):
                     messages.append(AIMessage(content=str(observation)))
-                elif 'none' == observation.platform_params.get('sandbox', 'auto'):
+                elif "none" == observation.platform_params.get("sandbox", "auto"):
                     messages.append(_create_tool_message(agent_action, observation))
                 else:
-                    raise ValueError(f"Unknown sandbox type: {observation.platform_params.get('sandbox', 'auto')}")
+                    raise ValueError(
+                        f"Unknown sandbox type: {observation.platform_params.get('sandbox', 'auto')}"
+                    )
             else:
                 raise ValueError(f"Unknown observation type: {type(observation)}")
 
