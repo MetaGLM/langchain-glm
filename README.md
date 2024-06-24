@@ -163,7 +163,10 @@ python tests/assistant/server/server.py
 python tests/assistant/test_chat.py
 ```
 
-> 展示
-> 
+> 展示 
 
-<video src="docs/img/demo.mp4" controls="controls" width="100%" height="100%"></video>
+```HTML
+<video width="320" height="240" controls>
+    <source src="docs/img/demo.mp4" type="video/mp4">
+</video>
+```
