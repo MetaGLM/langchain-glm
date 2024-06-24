@@ -164,5 +164,5 @@ python tests/assistant/test_chat.py
 ```
 
 > 展示
-[![demo](docs/img/demo.mp4)](https://github.com/MetaGLM/langchain-zhipuai/assets/16206043/06863f9c-cd03-4a74-b76a-daa315718104)
+https://github.com/MetaGLM/langchain-zhipuai/assets/16206043/06863f9c-cd03-4a74-b76a-daa315718104
  
