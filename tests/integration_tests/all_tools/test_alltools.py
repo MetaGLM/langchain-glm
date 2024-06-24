@@ -34,7 +34,7 @@ async def test_all_tools_code_interpreter(logging_conf):
     logging.config.dictConfig(logging_conf)  # type: ignore
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
-        model_name="tob-alltools-api-dev",
+        model_name="glm-4-alltools",
         tools=[{"type": "code_interpreter"}, shell],
     )
     chat_iterator = agent_executor.invoke(
@@ -79,7 +79,7 @@ async def test_all_tools_code_interpreter_sandbox_none(logging_conf):
     logging.config.dictConfig(logging_conf)  # type: ignore
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
-        model_name="tob-alltools-api-dev",
+        model_name="glm-4-alltools",
         tools=[
             {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}},
             shell,
