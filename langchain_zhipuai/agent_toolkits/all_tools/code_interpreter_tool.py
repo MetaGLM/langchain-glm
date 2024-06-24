@@ -13,6 +13,9 @@ from langchain_zhipuai.agent_toolkits.all_tools.tool import (
     AllToolExecutor,
     BaseToolOutput,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CodeInterpreterToolOutput(BaseToolOutput):
@@ -34,6 +37,30 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
 
     name: str
 
+    @staticmethod
+    def _python_ast_interpreter(code_input: str, platform_params: Dict[str, Any] = None):
+        """Use Shell to execute system shell commands"""
+
+        try:
+            from langchain_experimental.tools import PythonAstREPLTool
+            tool = PythonAstREPLTool()
+            out = tool.run(tool_input=code_input)
+
+            return CodeInterpreterToolOutput(
+                data=f"""Access：code_interpreter,{tool.name}, Message: {code_input}\r\n{out}""",
+                platform_params=platform_params,
+            )
+        except ImportError:
+            raise AttributeError(
+                "This tool has been moved to langchain experiment. "
+                "This tool has access to a python REPL. "
+                "For best practices make sure to sandbox this tool. "
+                "Read https://github.com/langchain-ai/langchain/blob/master/SECURITY.md "
+                "To keep using this code as is, install langchain experimental and "
+                "update relevant imports replacing 'langchain' with 'langchain_experimental'"
+            )
+
+
     def run(
         self,
         tool: str,
@@ -48,8 +75,12 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
                     f"Tool {self.name} sandbox is auto , but log is None, is server error"
                 )
             elif "none" == self.platform_params.get("sandbox", "auto"):
-                raise NotImplementedError(
-                    f"Tool {self.name} sandbox not auto , implement it"
+                logger.warning(
+                    f"Tool {self.name} sandbox is local!!!, this not safe, please use jupyter sandbox it"
+                )
+                return self._python_ast_interpreter(
+                    code_input=tool_input,
+                    platform_params=self.platform_params
                 )
 
         return CodeInterpreterToolOutput(
