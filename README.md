@@ -13,10 +13,6 @@
 
 ## 快速使用
 
-- 从pypi安装
-```shell
-pip install langchain-zhipuai -U
-```
 - 从 repo 安装
 https://github.com/MetaGLM/langchain-zhipuai/releases
 
