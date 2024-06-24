@@ -31,7 +31,7 @@ def shell(query: str = Field(description="The command to execute")):
 
 
 @pytest.mark.asyncio
-async def test_all_tools(logging_conf):
+async def test_all_tools_code_interpreter(logging_conf):
     logging.config.dictConfig(logging_conf)  # type: ignore
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
@@ -76,7 +76,7 @@ async def test_all_tools(logging_conf):
 
 
 @pytest.mark.asyncio
-async def test_all_tools_sandbox_none(logging_conf):
+async def test_all_tools_code_interpreter_sandbox_none(logging_conf):
     logging.config.dictConfig(logging_conf)  # type: ignore
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
