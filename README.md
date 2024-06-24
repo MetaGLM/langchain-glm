@@ -163,6 +163,6 @@ python tests/assistant/server/server.py
 python tests/assistant/test_chat.py
 ```
 
-> 展示 
-
-[demo.mp4](docs/img/demo.mp4) 
+> 展示
+[![demo](docs/img/demo.mp4)](docs/img/demo.mp4)
+ 
