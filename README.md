@@ -165,8 +165,7 @@ python tests/assistant/test_chat.py
 
 > 展示 
 
-```HTML
+
 <video width="320" height="240" controls>
     <source src="docs/img/demo.mp4" type="video/mp4">
 </video>
-```
