@@ -148,7 +148,8 @@ def _best_effort_parse_code_interpreter_tool_calls(
 
             if isinstance(code_interpreter["args"], str):
                 args_ = parse_partial_json(code_interpreter["args"])
-            args_ = code_interpreter["args"]
+            else:
+                args_ = code_interpreter["args"]
             if not isinstance(args_, dict):
                 raise ValueError("Malformed args.")
 

@@ -71,7 +71,7 @@ logging.config.dictConfig({
         }
     },
     "loggers": {
-        "loom_core": {
+        "langchain_zhipuai_core": {
             "handlers": ["stream_handler", "file_handler"],
             "level": "INFO",
             "propagate": False
@@ -94,13 +94,13 @@ def shell(query: str = Field(description="要执行的命令")):
 ```
 
 ### 4. 创建一个代理执行器
-这部分设置了一个执行器来运行多个工具。它使用一个叫tob-alltools-api-dev的模型，并包括之前定义的shell工具。
+这部分设置了一个执行器来运行多个工具。它使用一个叫glm-4-alltools的模型，并包括之前定义的shell工具。
 `sandbox`: 指定代码沙盒环境，默认 = auto，即自动调用沙盒环境执行代码。 设置 sandbox = none，不启用沙盒环境后。
 代码生成后返回状态 status = requires_action，需要用户提交代码执行结果。
 
 ```python
-    agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
-    model_name="tob-alltools-api-dev",
+agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
+    model_name="glm-4-alltools",
     tools=[{
         "type": "code_interpreter",
         "code_interpreter": {
@@ -114,7 +114,10 @@ def shell(query: str = Field(description="要执行的命令")):
 
 ### 5. 使用代理运行Shell命令并打印结果
 这部分使用代理来运行一个Shell命令，并在结果出现时打印出来。它检查结果的类型并打印相关信息。
-
+这个invoke返回一个异步迭代器，可以用来处理代理的输出。
+你可以多次调用invoke方法，每次调用都会返回一个新的迭代器。
+ZhipuAIAllToolsRunnable会自动处理状态保存和恢复，一些状态信息会被保存实例中
+你可以通过callback属性获取intermediate_steps的状态信息。
 ```python
 chat_iterator = agent_executor.invoke(
     chat_input="看下本地文件有哪些，告诉我你用的是什么文件,查看当前目录"
@@ -132,3 +135,35 @@ async for item in chat_iterator:
         if item.status == AgentStatus.llm_end:
             print("llm_end:" + item.text)
 ```
+
+## 集成demo
+我们提供了一个集成的demo，可以直接运行，查看效果。
+- 安装依赖
+```shell
+fastapi = "~0.109.2"
+sse_starlette = "~1.8.2" 
+uvicorn = ">=0.27.0.post1"
+# webui
+streamlit = "1.34.0"
+streamlit-option-menu = "0.3.12"
+streamlit-antd-components = "0.3.1"
+streamlit-chatbox = "1.1.12.post4"
+streamlit-modal = "0.1.0"
+streamlit-aggrid = "1.0.5"
+streamlit-extras = "0.4.2"
+```
+
+- 运行后端服务[server.py](tests/assistant/server/server.py)
+```shell
+python tests/assistant/server/server.py
+```
+
+- 运行前端服务[test_chat.py](tests/assistant/test_chat.py)
+```shell
+python tests/assistant/test_chat.py
+```
+
+> 展示
+> 
+
+<video src="docs/img/demo.mp4" controls="controls" width="100%" height="100%"></video>
