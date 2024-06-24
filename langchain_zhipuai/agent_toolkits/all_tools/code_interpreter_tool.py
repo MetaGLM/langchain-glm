@@ -97,14 +97,18 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
         run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> CodeInterpreterToolOutput:
         """Use the tool asynchronously."""
-        if outputs is None or str(outputs).strip() == "":
+        if outputs is None or str(outputs).strip() == "" or len(outputs) == 0:
             if "auto" == self.platform_params.get("sandbox", "auto"):
                 raise ValueError(
                     f"Tool {self.name} sandbox is auto , but log is None, is server error"
                 )
             elif "none" == self.platform_params.get("sandbox", "auto"):
-                raise NotImplementedError(
-                    f"Tool {self.name} sandbox not auto , implement it"
+                logger.warning(
+                    f"Tool {self.name} sandbox is local!!!, this not safe, please use jupyter sandbox it"
+                )
+                return self._python_ast_interpreter(
+                    code_input=tool_input,
+                    platform_params=self.platform_params
                 )
 
         return CodeInterpreterToolOutput(

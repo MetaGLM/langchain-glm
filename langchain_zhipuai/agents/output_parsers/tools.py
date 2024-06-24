@@ -145,8 +145,10 @@ def _best_effort_parse_code_interpreter_tool_calls(
     # Best-effort parsing allready parsed tool calls
     for code_interpreter in tool_call_chunks:
         if "code_interpreter" == code_interpreter["name"]:
-            args_ = parse_partial_json(code_interpreter["args"])
 
+            if isinstance(code_interpreter["args"], str):
+                args_ = parse_partial_json(code_interpreter["args"])
+            args_ = code_interpreter["args"]
             if not isinstance(args_, dict):
                 raise ValueError("Malformed args.")
 
