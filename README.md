@@ -164,5 +164,7 @@ python tests/assistant/test_chat.py
 ```
 
 > 展示
+
+
 https://github.com/MetaGLM/langchain-zhipuai/assets/16206043/06863f9c-cd03-4a74-b76a-daa315718104
  
