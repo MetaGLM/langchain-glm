@@ -15,7 +15,7 @@ on:
         default: '.'
         description: "From which folder this pipeline executes"
 env:
-  PYTHON_VERSION: "3.8"
+  PYTHON_VERSION: "3.9"
   POETRY_VERSION: "1.7.1"
 
 jobs:
@@ -174,7 +174,7 @@ jobs:
       - test-pypi-publish
       - pre-release-checks
     environment: Scheduled testing publish
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
 
     defaults:
       run:
@@ -198,12 +198,12 @@ jobs:
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-       
+
         with:
           packages-dir: ${{ inputs.working-directory }}/dist/
           verbose: true
           print-hash: true
-          user: __token__ 
+          user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
           # We overwrite any existing distributions with the same name and version.
           # This is *only for CI use* and is *extremely dangerous* otherwise!
@@ -215,8 +215,7 @@ jobs:
       - build
       - test-pypi-publish
       - pre-release-checks
-      - publish
-    environment: Scheduled testing publish
+#      - publish
     runs-on: ubuntu-latest
     permissions:
       # This permission is needed by `ncipollo/release-action` to
