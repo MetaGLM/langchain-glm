@@ -12,10 +12,14 @@
 
 
 ## 快速使用
-- 安装依赖
+
+- 从pypi安装
 ```shell
 pip install langchain-zhipuai -U
 ```
+- 从 repo 安装
+https://github.com/MetaGLM/langchain-zhipuai/releases
+
 
 > 使用前请设置环境变量`ZHIPUAI_API_KEY`，值为智谱AI的API Key。
  
