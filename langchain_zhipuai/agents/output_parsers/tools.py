@@ -1,8 +1,7 @@
 import json
 import logging
 from json import JSONDecodeError
-from typing import List, Union, Optional, Dict, Any
-from zhipuai.core import BaseModel
+from typing import Any, Dict, List, Optional, Union
 
 from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
@@ -12,10 +11,10 @@ from langchain_core.messages import (
     BaseMessage,
     ToolCall,
 )
-
 from langchain_core.utils.json import (
     parse_partial_json,
 )
+from zhipuai.core import BaseModel
 
 from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk
 
@@ -42,7 +41,7 @@ class AllToolsMessageToolCallChunk(BaseModel):
 
 
 def parse_ai_message_to_tool_action(
-        message: BaseMessage,
+    message: BaseMessage,
 ) -> Union[List[AgentAction], AgentFinish]:
     """Parse an AI message potentially containing tool_calls."""
     if not isinstance(message, AIMessage):
@@ -91,12 +90,18 @@ def parse_ai_message_to_tool_action(
                     )
                 )
 
-    code_interpreter_chunk: List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]] = []
+    code_interpreter_chunk: List[
+        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+    ] = []
     if message.tool_calls:
         if isinstance(message, ALLToolsMessageChunk):
-            code_interpreter_chunk = _best_effort_parse_code_interpreter_tool_calls(message.tool_call_chunks)
+            code_interpreter_chunk = _best_effort_parse_code_interpreter_tool_calls(
+                message.tool_call_chunks
+            )
     else:
-        code_interpreter_chunk = _best_effort_parse_code_interpreter_tool_calls(tool_calls)
+        code_interpreter_chunk = _best_effort_parse_code_interpreter_tool_calls(
+            tool_calls
+        )
 
     if code_interpreter_chunk and len(code_interpreter_chunk) > 1:
         actions.append(
@@ -139,13 +144,14 @@ def parse_ai_message_to_tool_action(
 
 
 def _best_effort_parse_code_interpreter_tool_calls(
-        tool_call_chunks: List[dict]
+    tool_call_chunks: List[dict],
 ) -> List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]:
-    code_interpreter_chunk: List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]] = []
+    code_interpreter_chunk: List[
+        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+    ] = []
     # Best-effort parsing allready parsed tool calls
     for code_interpreter in tool_call_chunks:
         if "code_interpreter" == code_interpreter["name"]:
-
             if isinstance(code_interpreter["args"], str):
                 args_ = parse_partial_json(code_interpreter["args"])
             else:
@@ -162,18 +168,23 @@ def _best_effort_parse_code_interpreter_tool_calls(
                     )
                 )
             else:
-                code_interpreter_chunk.append(AllToolsMessageToolCallChunk(
-                    name=code_interpreter["name"],
-                    args=args_,
-                    id=code_interpreter["id"],
-                    index=code_interpreter.get("index"),
-                ))
+                code_interpreter_chunk.append(
+                    AllToolsMessageToolCallChunk(
+                        name=code_interpreter["name"],
+                        args=args_,
+                        id=code_interpreter["id"],
+                        index=code_interpreter.get("index"),
+                    )
+                )
 
     return code_interpreter_chunk
 
 
 def _paser_code_interpreter_chunk_input(
-        message: BaseMessage, code_interpreter_chunk: List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]
+    message: BaseMessage,
+    code_interpreter_chunk: List[
+        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+    ],
 ) -> CodeInterpreterAgentAction:
     try:
         input_log_chunk = []
@@ -190,9 +201,7 @@ def _paser_code_interpreter_chunk_input(
         out_logs = [logs["logs"] for logs in outputs if "logs" in logs]
         log = f"{''.join(input_log_chunk)}\n{''.join(out_logs)}\n"
         tool_call_id = (
-            code_interpreter_chunk[0].id
-            if code_interpreter_chunk[0].id
-            else "abc"
+            code_interpreter_chunk[0].id if code_interpreter_chunk[0].id else "abc"
         )
         code_interpreter_action = CodeInterpreterAgentAction(
             tool="code_interpreter",

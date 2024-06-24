@@ -19,7 +19,7 @@ from langchain_core.messages import (
     ToolMessage,
     ToolMessageChunk,
 )
-from pydantic.v1 import BaseModel, Field
+from zhipuai.core import BaseModel
 
 logger = logging.getLogger()
 
@@ -80,8 +80,8 @@ class History(BaseModel):
     h.to_msy_tuple = ("human", "你好")
     """
 
-    role: str = Field(...)
-    content: str = Field(...)
+    role: str
+    content: str
 
     def to_msg_tuple(self):
         return "ai" if self.role == "assistant" else "human", self.content

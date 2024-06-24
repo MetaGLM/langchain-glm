@@ -22,7 +22,6 @@ from langchain_zhipuai.callbacks.agent_callback_handler import (
 )
 
 
-
 @tool
 def shell(query: str = Field(description="The command to execute")):
     """Use Shell to execute system shell commands"""
@@ -81,12 +80,10 @@ async def test_all_tools_code_interpreter_sandbox_none(logging_conf):
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
         model_name="tob-alltools-api-dev",
-        tools=[{
-            "type": "code_interpreter",
-            "code_interpreter": {
-                "sandbox": 'none'
-            }
-        }, shell],
+        tools=[
+            {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}},
+            shell,
+        ],
     )
     chat_iterator = agent_executor.invoke(
         chat_input="看下本地文件有哪些，告诉我你用的是什么文件,查看当前目录"

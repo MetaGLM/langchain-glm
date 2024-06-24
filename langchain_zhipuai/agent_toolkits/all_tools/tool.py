@@ -30,7 +30,6 @@ from langchain_core.callbacks import (
     Callbacks,
 )
 from langchain_core.tools import BaseTool
-from pydantic.v1 import Extra, Field
 
 from langchain_zhipuai.agents.output_parsers.tools import CodeInterpreterAgentAction
 
@@ -164,7 +163,9 @@ class AdapterAllTool(BaseTool, Generic[E]):
         run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
         **tool_run_kwargs: Any,
     ) -> Any:
-        if "code_interpreter" in agent_action.tool and isinstance(agent_action, CodeInterpreterAgentAction):
+        if "code_interpreter" in agent_action.tool and isinstance(
+            agent_action, CodeInterpreterAgentAction
+        ):
             return await self.adapter_all_tool.arun(
                 **{
                     "tool": agent_action.tool,

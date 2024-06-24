@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
@@ -13,7 +14,6 @@ from langchain_zhipuai.agent_toolkits.all_tools.tool import (
     AllToolExecutor,
     BaseToolOutput,
 )
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +38,14 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
     name: str
 
     @staticmethod
-    def _python_ast_interpreter(code_input: str, platform_params: Dict[str, Any] = None):
+    def _python_ast_interpreter(
+        code_input: str, platform_params: Dict[str, Any] = None
+    ):
         """Use Shell to execute system shell commands"""
 
         try:
             from langchain_experimental.tools import PythonAstREPLTool
+
             tool = PythonAstREPLTool()
             out = tool.run(tool_input=code_input)
 
@@ -59,7 +62,6 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
                 "To keep using this code as is, install langchain experimental and "
                 "update relevant imports replacing 'langchain' with 'langchain_experimental'"
             )
-
 
     def run(
         self,
@@ -79,8 +81,7 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
                     f"Tool {self.name} sandbox is local!!!, this not safe, please use jupyter sandbox it"
                 )
                 return self._python_ast_interpreter(
-                    code_input=tool_input,
-                    platform_params=self.platform_params
+                    code_input=tool_input, platform_params=self.platform_params
                 )
 
         return CodeInterpreterToolOutput(
@@ -107,8 +108,7 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
                     f"Tool {self.name} sandbox is local!!!, this not safe, please use jupyter sandbox it"
                 )
                 return self._python_ast_interpreter(
-                    code_input=tool_input,
-                    platform_params=self.platform_params
+                    code_input=tool_input, platform_params=self.platform_params
                 )
 
         return CodeInterpreterToolOutput(
