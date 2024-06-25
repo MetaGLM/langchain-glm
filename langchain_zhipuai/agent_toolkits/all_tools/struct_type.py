@@ -14,3 +14,5 @@ class AdapterAllToolStructType(str, Enum):
     # TODO: refactor so these are properties on the base class
 
     CODE_INTERPRETER = "code_interpreter"
+    DRAWING_TOOL = "drawing_tool"
+    WEB_BROWSER = "web_browser"

@@ -5,11 +5,13 @@ from langchain_core.agents import AgentAction, AgentFinish
 from langchain_core.messages import BaseMessage
 from langchain_core.outputs import ChatGeneration, Generation
 
+from langchain_zhipuai.agents.output_parsers.code_interpreter import CodeInterpreterAgentAction
+from langchain_zhipuai.agents.output_parsers.drawing_tool import DrawingToolAgentAction
 from langchain_zhipuai.agents.output_parsers.tools import (
-    CodeInterpreterAgentAction,
     ToolAgentAction,
     parse_ai_message_to_tool_action,
 )
+from langchain_zhipuai.agents.output_parsers.web_browser import WebBrowserAgentAction
 
 ZhipuAiALLToolAgentAction = ToolAgentAction
 
@@ -24,6 +26,10 @@ def parse_ai_message_to_zhipuai_all_tool_action(
     final_actions: List[AgentAction] = []
     for action in tool_actions:
         if isinstance(action, CodeInterpreterAgentAction):
+            final_actions.append(action)
+        elif isinstance(action, DrawingToolAgentAction):
+            final_actions.append(action)
+        elif isinstance(action, WebBrowserAgentAction):
             final_actions.append(action)
         elif isinstance(action, ToolAgentAction):
             final_actions.append(

@@ -120,3 +120,31 @@ async def test_all_tools_code_interpreter_sandbox_none(logging_conf):
         elif isinstance(item, AllToolsLLMStatus):
             if item.status == AgentStatus.llm_end:
                 print("llm_end:" + item.text)
+
+
+@pytest.mark.asyncio
+async def test_all_tools_drawing_tool(logging_conf):
+    logging.config.dictConfig(logging_conf)  # type: ignore
+
+    agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
+        model_name="glm-4-alltools",
+        tools=[{"type": "drawing_tool"}],
+    )
+    chat_iterator = agent_executor.invoke(
+        chat_input="给我画一张猫咪的图片，要是波斯猫"
+    )
+    async for item in chat_iterator:
+        if isinstance(item, AllToolsAction):
+            print("AllToolsAction:" + str(item.to_json()))
+
+        elif isinstance(item, AllToolsFinish):
+            print("AllToolsFinish:" + str(item.to_json()))
+
+        elif isinstance(item, AllToolsActionToolStart):
+            print("AllToolsActionToolStart:" + str(item.to_json()))
+
+        elif isinstance(item, AllToolsActionToolEnd):
+            print("AllToolsActionToolEnd:" + str(item.to_json()))
+        elif isinstance(item, AllToolsLLMStatus):
+            if item.status == AgentStatus.llm_end:
+                print("llm_end:" + item.text)

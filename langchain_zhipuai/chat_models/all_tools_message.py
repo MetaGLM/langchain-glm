@@ -36,6 +36,22 @@ def default_all_tool_chunk_parser(raw_tool_calls: List[dict]) -> List[ToolCallCh
                 tool_call["code_interpreter"], ensure_ascii=False
             )
             function_name = "code_interpreter"
+        elif (
+            "drawing_tool" in tool_call
+            and tool_call["drawing_tool"] is not None
+        ):
+            function_args = json.dumps(
+                tool_call["drawing_tool"], ensure_ascii=False
+            )
+            function_name = "drawing_tool"
+        elif (
+            "web_browser" in tool_call
+            and tool_call["web_browser"] is not None
+        ):
+            function_args = json.dumps(
+                tool_call["web_browser"], ensure_ascii=False
+            )
+            function_name = "web_browser"
         else:
             function_args = None
             function_name = None
@@ -106,6 +122,54 @@ class ALLToolsMessageChunk(AIMessage, BaseMessageChunk):
         for chunk in values["tool_call_chunks"]:
             try:
                 if "code_interpreter" in chunk["name"]:
+                    args_ = parse_partial_json(chunk["args"])
+
+                    if not isinstance(args_, dict):
+                        raise ValueError("Malformed args.")
+
+                    if "outputs" in args_:
+                        tool_calls.append(
+                            ToolCall(
+                                name=chunk["name"] or "",
+                                args=args_,
+                                id=chunk["id"],
+                            )
+                        )
+
+                    else:
+                        invalid_tool_calls.append(
+                            InvalidToolCall(
+                                name=chunk["name"],
+                                args=chunk["args"],
+                                id=chunk["id"],
+                                error=None,
+                            )
+                        )
+                elif "drawing_tool" in chunk["name"]:
+                    args_ = parse_partial_json(chunk["args"])
+
+                    if not isinstance(args_, dict):
+                        raise ValueError("Malformed args.")
+
+                    if "outputs" in args_:
+                        tool_calls.append(
+                            ToolCall(
+                                name=chunk["name"] or "",
+                                args=args_,
+                                id=chunk["id"],
+                            )
+                        )
+
+                    else:
+                        invalid_tool_calls.append(
+                            InvalidToolCall(
+                                name=chunk["name"],
+                                args=chunk["args"],
+                                id=chunk["id"],
+                                error=None,
+                            )
+                        )
+                elif "web_browser" in chunk["name"]:
                     args_ = parse_partial_json(chunk["args"])
 
                     if not isinstance(args_, dict):

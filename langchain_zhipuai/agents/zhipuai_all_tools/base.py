@@ -30,6 +30,7 @@ from pydantic.v1 import BaseModel, Field, validator
 from langchain_zhipuai.agent_toolkits.all_tools.registry import (
     TOOL_STRUCT_TYPE_TO_TOOL_CLASS,
 )
+from langchain_zhipuai.agent_toolkits.all_tools.struct_type import AdapterAllToolStructType
 from langchain_zhipuai.agent_toolkits.all_tools.tool import (
     AdapterAllTool,
     BaseToolOutput,
@@ -61,7 +62,7 @@ def _is_assistants_builtin_tool(
     tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
 ) -> bool:
     """platform tools built-in"""
-    assistants_builtin_tools = ("code_interpreter",)
+    assistants_builtin_tools = AdapterAllToolStructType.__members__.values()
     return (
         isinstance(tool, dict)
         and ("type" in tool)
@@ -73,8 +74,6 @@ def _get_assistants_tool(
     tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
 ) -> Dict[str, Any]:
     """Convert a raw function/class to an ZhipuAI tool.
-
-    such as "code_interpreter"
     """
     if _is_assistants_builtin_tool(tool):
         return tool  # type: ignore
@@ -220,7 +219,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
             for t in tools:
                 # TODO: platform tools built-in for all tools,
                 #       load with langchain_zhipuai/agents/all_tools_agent.py:108
-                # AdapterAllTool implements code_interpreter
+                # AdapterAllTool implements it
                 if _is_assistants_builtin_tool(t):
                     assistants_builtin_tools.append(cls.paser_all_tools(t, callbacks))
             temp_tools.extend(assistants_builtin_tools)

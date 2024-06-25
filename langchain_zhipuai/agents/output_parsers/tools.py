@@ -16,32 +16,21 @@ from langchain_core.utils.json import (
 )
 from zhipuai.core import BaseModel
 
+from langchain_zhipuai.agent_toolkits.all_tools.struct_type import AdapterAllToolStructType
+from langchain_zhipuai.agents.output_parsers.base import AllToolsMessageToolCallChunk, AllToolsMessageToolCall
+from langchain_zhipuai.agents.output_parsers.code_interpreter import _best_effort_parse_code_interpreter_tool_calls, \
+    _paser_code_interpreter_chunk_input
+from langchain_zhipuai.agents.output_parsers.drawing_tool import _paser_drawing_tool_chunk_input, \
+    _best_effort_parse_drawing_tool_tool_calls
+from langchain_zhipuai.agents.output_parsers.web_browser import _paser_web_browser_chunk_input, \
+    _best_effort_parse_web_browser_tool_calls
 from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk
 
 logger = logging.getLogger(__name__)
 
 
-class CodeInterpreterAgentAction(ToolAgentAction):
-    outputs: List[Union[str, dict]] = None
-    """Output of the tool call."""
-    platform_params: dict = None
-
-
-class AllToolsMessageToolCall(BaseModel):
-    name: Optional[str]
-    args: Optional[Dict[str, Any]]
-    id: Optional[str]
-
-
-class AllToolsMessageToolCallChunk(BaseModel):
-    name: Optional[str]
-    args: Optional[Dict[str, Any]]
-    id: Optional[str]
-    index: Optional[int]
-
-
 def parse_ai_message_to_tool_action(
-    message: BaseMessage,
+        message: BaseMessage,
 ) -> Union[List[AgentAction], AgentFinish]:
     """Parse an AI message potentially containing tool_calls."""
     if not isinstance(message, AIMessage):
@@ -79,13 +68,13 @@ def parse_ai_message_to_tool_action(
                         f"Could not parse tool input: {function} because "
                         f"the `arguments` is not valid JSON."
                     )
-            elif "code_interpreter" == tool_call["type"]:
-                code_interpreter = tool_call["code_interpreter"]
+            elif tool_call["type"] in AdapterAllToolStructType.__members__.values():
+                adapter_tool = tool_call[tool_call["type"]]
 
                 tool_calls.append(
                     ToolCall(
-                        name="code_interpreter",
-                        args=code_interpreter,
+                        name=tool_call["type"],
+                        args=adapter_tool if adapter_tool else {},
                         id=tool_call["id"] if tool_call["id"] else "abc",
                     )
                 )
@@ -108,10 +97,46 @@ def parse_ai_message_to_tool_action(
             _paser_code_interpreter_chunk_input(message, code_interpreter_chunk)
         )
 
+    drawing_tool_chunk: List[
+        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+    ] = []
+    if message.tool_calls:
+        if isinstance(message, ALLToolsMessageChunk):
+            drawing_tool_chunk = _best_effort_parse_drawing_tool_tool_calls(
+                message.tool_call_chunks
+            )
+    else:
+        drawing_tool_chunk = _best_effort_parse_drawing_tool_tool_calls(
+            tool_calls
+        )
+
+    if drawing_tool_chunk and len(drawing_tool_chunk) > 1:
+        actions.append(
+            _paser_drawing_tool_chunk_input(message, drawing_tool_chunk)
+        )
+
+    web_browser_chunk: List[
+        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+    ] = []
+    if message.tool_calls:
+        if isinstance(message, ALLToolsMessageChunk):
+            web_browser_chunk = _best_effort_parse_web_browser_tool_calls(
+                message.tool_call_chunks
+            )
+    else:
+        web_browser_chunk = _best_effort_parse_web_browser_tool_calls(
+            tool_calls
+        )
+
+    if web_browser_chunk and len(web_browser_chunk) > 1:
+        actions.append(
+            _paser_web_browser_chunk_input(message, web_browser_chunk)
+        )
+
     # TODO: parse platform tools built-in @langchain_zhipuai
-    # delete code_interpreter_chunk
+    # delete AdapterAllToolStructType from tool_calls
     tool_calls = [
-        tool_call for tool_call in tool_calls if "code_interpreter" != tool_call["name"]
+        tool_call for tool_call in tool_calls if tool_call["name"] not in AdapterAllToolStructType.__members__.values()
     ]
 
     for tool_call in tool_calls:
@@ -141,81 +166,3 @@ def parse_ai_message_to_tool_action(
             )
         )
     return actions
-
-
-def _best_effort_parse_code_interpreter_tool_calls(
-    tool_call_chunks: List[dict],
-) -> List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]:
-    code_interpreter_chunk: List[
-        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
-    ] = []
-    # Best-effort parsing allready parsed tool calls
-    for code_interpreter in tool_call_chunks:
-        if "code_interpreter" == code_interpreter["name"]:
-            if isinstance(code_interpreter["args"], str):
-                args_ = parse_partial_json(code_interpreter["args"])
-            else:
-                args_ = code_interpreter["args"]
-            if not isinstance(args_, dict):
-                raise ValueError("Malformed args.")
-
-            if "outputs" in args_:
-                code_interpreter_chunk.append(
-                    AllToolsMessageToolCall(
-                        name=code_interpreter["name"],
-                        args=args_,
-                        id=code_interpreter["id"],
-                    )
-                )
-            else:
-                code_interpreter_chunk.append(
-                    AllToolsMessageToolCallChunk(
-                        name=code_interpreter["name"],
-                        args=args_,
-                        id=code_interpreter["id"],
-                        index=code_interpreter.get("index"),
-                    )
-                )
-
-    return code_interpreter_chunk
-
-
-def _paser_code_interpreter_chunk_input(
-    message: BaseMessage,
-    code_interpreter_chunk: List[
-        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
-    ],
-) -> CodeInterpreterAgentAction:
-    try:
-        input_log_chunk = []
-
-        outputs = []
-        for interpreter_chunk in code_interpreter_chunk:
-            interpreter_chunk_args = interpreter_chunk.args
-
-            if "input" in interpreter_chunk_args:
-                input_log_chunk.append(interpreter_chunk_args["input"])
-            if "outputs" in interpreter_chunk_args:
-                outputs.extend(interpreter_chunk_args["outputs"])
-
-        out_logs = [logs["logs"] for logs in outputs if "logs" in logs]
-        log = f"{''.join(input_log_chunk)}\n{''.join(out_logs)}\n"
-        tool_call_id = (
-            code_interpreter_chunk[0].id if code_interpreter_chunk[0].id else "abc"
-        )
-        code_interpreter_action = CodeInterpreterAgentAction(
-            tool="code_interpreter",
-            tool_input="".join(input_log_chunk),
-            outputs=outputs,
-            log=log,
-            message_log=[message],
-            tool_call_id=tool_call_id,
-        )
-
-        return code_interpreter_action
-    except Exception as e:
-        logger.error(f"Error parsing code_interpreter_chunk: {e}", exc_info=True)
-        raise OutputParserException(
-            f"Could not parse tool input: code_interpreter because "
-            f"the `arguments` is not valid JSON."
-        )

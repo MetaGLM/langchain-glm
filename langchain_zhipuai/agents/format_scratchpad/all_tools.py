@@ -13,7 +13,11 @@ from langchain_zhipuai.agent_toolkits import BaseToolOutput
 from langchain_zhipuai.agent_toolkits.all_tools.code_interpreter_tool import (
     CodeInterpreterToolOutput,
 )
-from langchain_zhipuai.agents.output_parsers.tools import CodeInterpreterAgentAction
+from langchain_zhipuai.agent_toolkits.all_tools.drawing_tool import DrawingToolOutput
+from langchain_zhipuai.agent_toolkits.all_tools.web_browser_tool import WebBrowserToolOutput
+from langchain_zhipuai.agents.output_parsers.code_interpreter import CodeInterpreterAgentAction
+from langchain_zhipuai.agents.output_parsers.drawing_tool import DrawingToolAgentAction
+from langchain_zhipuai.agents.output_parsers.web_browser import WebBrowserAgentAction
 
 
 def _create_tool_message(
@@ -64,6 +68,18 @@ def format_to_zhipuai_all_tool_messages(
                     raise ValueError(
                         f"Unknown sandbox type: {observation.platform_params.get('sandbox', 'auto')}"
                     )
+            else:
+                raise ValueError(f"Unknown observation type: {type(observation)}")
+
+        elif isinstance(agent_action, DrawingToolAgentAction):
+            if isinstance(observation, DrawingToolOutput):
+                messages.append(AIMessage(content=str(observation)))
+            else:
+                raise ValueError(f"Unknown observation type: {type(observation)}")
+
+        elif isinstance(agent_action, WebBrowserAgentAction):
+            if isinstance(observation, WebBrowserToolOutput):
+                messages.append(AIMessage(content=str(observation)))
             else:
                 raise ValueError(f"Unknown observation type: {type(observation)}")
 
