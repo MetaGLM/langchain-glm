@@ -73,13 +73,19 @@ def format_to_zhipuai_all_tool_messages(
 
         elif isinstance(agent_action, DrawingToolAgentAction):
             if isinstance(observation, DrawingToolOutput):
-                messages.append(AIMessage(content=str(observation)))
+                new_messages = list(agent_action.message_log) + [
+                    _create_tool_message(agent_action, observation)
+                ]
+                messages.extend([new for new in new_messages if new not in messages])
             else:
                 raise ValueError(f"Unknown observation type: {type(observation)}")
 
         elif isinstance(agent_action, WebBrowserAgentAction):
             if isinstance(observation, WebBrowserToolOutput):
-                messages.append(AIMessage(content=str(observation)))
+                new_messages = list(agent_action.message_log) + [
+                    _create_tool_message(agent_action, observation)
+                ]
+                messages.extend([new for new in new_messages if new not in messages])
             else:
                 raise ValueError(f"Unknown observation type: {type(observation)}")
 

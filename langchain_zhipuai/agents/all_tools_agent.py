@@ -56,7 +56,7 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
             # We then call the tool on the tool input to get an observation
             # TODO: platform adapter tool for all  tools,
             #       view tools binding langchain_zhipuai/agents/zhipuai_all_tools/base.py:188
-            if "code_interpreter" in agent_action.tool:
+            if agent_action.tool in AdapterAllToolStructType.__members__.values():
                 observation = tool.run(
                     {
                         "agent_action": agent_action,

@@ -38,7 +38,7 @@ from langchain_core.utils import (
 logger = logging.getLogger(__name__)
 
 
-class ZhipuAIAIEmbeddings(BaseModel, Embeddings):
+class ZhipuAIEmbeddings(BaseModel, Embeddings):
     """ZhipuAI embedding models.
 
     To use, you should have the

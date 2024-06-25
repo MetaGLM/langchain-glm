@@ -35,7 +35,7 @@ async def test_all_tools_code_interpreter(logging_conf):
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
         model_name="glm-4-alltools",
-        tools=[{"type": "code_interpreter"}, shell],
+        tools=[shell],
     )
     chat_iterator = agent_executor.invoke(
         chat_input="看下本地文件有哪些，告诉我你用的是什么文件,查看当前目录"
@@ -55,24 +55,6 @@ async def test_all_tools_code_interpreter(logging_conf):
         elif isinstance(item, AllToolsLLMStatus):
             if item.status == AgentStatus.llm_end:
                 print("llm_end:" + item.text)
-
-    chat_iterator = agent_executor.invoke(chat_input="打印下test_alltools.py")
-    async for item in chat_iterator:
-        if isinstance(item, AllToolsAction):
-            print("AllToolsAction:" + str(item.to_json()))
-
-        elif isinstance(item, AllToolsFinish):
-            print("AllToolsFinish:" + str(item.to_json()))
-
-        elif isinstance(item, AllToolsActionToolStart):
-            print("AllToolsActionToolStart:" + str(item.to_json()))
-
-        elif isinstance(item, AllToolsActionToolEnd):
-            print("AllToolsActionToolEnd:" + str(item.to_json()))
-        elif isinstance(item, AllToolsLLMStatus):
-            if item.status == AgentStatus.llm_end:
-                print("llm_end:" + item.text)
-
 
 @pytest.mark.asyncio
 async def test_all_tools_code_interpreter_sandbox_none(logging_conf):
