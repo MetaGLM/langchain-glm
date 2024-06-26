@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "langchain-zhipuai"
-version = "0.0.1.20240625"
+version = "0.0.2"
 description = ""
 authors = ["glide-the <2533736852@qq.com>"]
 readme = "README.md"
