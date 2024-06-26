@@ -66,7 +66,14 @@ async def chat(
         model_name="glm-4-alltools",
         history=history,
         intermediate_steps=intermediate_steps,
-        tools=[{"type": "code_interpreter"}, calculate],
+        tools=[
+
+            {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}},
+            {"type": "web_browser"},
+            {"type": "drawing_tool"},
+
+            calculate
+        ],
     )
     chat_iterator = agent_executor.invoke(chat_input=query)
 
