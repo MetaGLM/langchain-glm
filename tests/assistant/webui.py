@@ -1,3 +1,5 @@
+import os
+
 import streamlit as st
 
 # from chatchat.webui_pages.loom_view_client import update_store
@@ -14,7 +16,12 @@ api = ZhipuAIPluginsClient(base_url="http://127.0.0.1:10000")
 if __name__ == "__main__":
     st.set_page_config(
         "assistant",
-        get_img_base64("chatchat_icon_blue_square_v2.png"),
+        get_img_base64(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "chatchat_icon_blue_square_v2.png",
+            )
+        ),
         initial_sidebar_state="expanded",
         menu_items={},
         layout="wide",

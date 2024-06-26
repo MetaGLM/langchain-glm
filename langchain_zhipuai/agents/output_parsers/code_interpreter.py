@@ -16,8 +16,13 @@ from langchain_core.utils.json import (
 )
 from zhipuai.core import BaseModel
 
-from langchain_zhipuai.agent_toolkits.all_tools.struct_type import AdapterAllToolStructType
-from langchain_zhipuai.agents.output_parsers.base import AllToolsMessageToolCall, AllToolsMessageToolCallChunk
+from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
+    AdapterAllToolStructType,
+)
+from langchain_zhipuai.agents.output_parsers.base import (
+    AllToolsMessageToolCall,
+    AllToolsMessageToolCallChunk,
+)
 from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk
 
 logger = logging.getLogger(__name__)
@@ -30,7 +35,7 @@ class CodeInterpreterAgentAction(ToolAgentAction):
 
 
 def _best_effort_parse_code_interpreter_tool_calls(
-        tool_call_chunks: List[dict],
+    tool_call_chunks: List[dict],
 ) -> List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]:
     code_interpreter_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -67,10 +72,10 @@ def _best_effort_parse_code_interpreter_tool_calls(
 
 
 def _paser_code_interpreter_chunk_input(
-        message: BaseMessage,
-        code_interpreter_chunk: List[
-            Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
-        ],
+    message: BaseMessage,
+    code_interpreter_chunk: List[
+        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+    ],
 ) -> CodeInterpreterAgentAction:
     try:
         input_log_chunk = []

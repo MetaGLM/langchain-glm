@@ -31,8 +31,12 @@ from langchain_core.callbacks import (
 )
 from langchain_core.tools import BaseTool
 
-from langchain_zhipuai.agent_toolkits.all_tools.struct_type import AdapterAllToolStructType
-from langchain_zhipuai.agents.output_parsers.code_interpreter import CodeInterpreterAgentAction
+from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
+    AdapterAllToolStructType,
+)
+from langchain_zhipuai.agents.output_parsers.code_interpreter import (
+    CodeInterpreterAgentAction,
+)
 from langchain_zhipuai.agents.output_parsers.drawing_tool import DrawingToolAgentAction
 from langchain_zhipuai.agents.output_parsers.web_browser import WebBrowserAgentAction
 
@@ -145,8 +149,9 @@ class AdapterAllTool(BaseTool, Generic[E]):
         run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
         **tool_run_kwargs: Any,
     ) -> Any:
-        if AdapterAllToolStructType.CODE_INTERPRETER == agent_action.tool and isinstance(
-                agent_action, CodeInterpreterAgentAction
+        if (
+            AdapterAllToolStructType.CODE_INTERPRETER == agent_action.tool
+            and isinstance(agent_action, CodeInterpreterAgentAction)
         ):
             return self.adapter_all_tool.run(
                 **{
@@ -158,7 +163,7 @@ class AdapterAllTool(BaseTool, Generic[E]):
                 **tool_run_kwargs,
             )
         elif AdapterAllToolStructType.DRAWING_TOOL == agent_action.tool and isinstance(
-                agent_action, DrawingToolAgentAction
+            agent_action, DrawingToolAgentAction
         ):
             return self.adapter_all_tool.run(
                 **{
@@ -170,7 +175,7 @@ class AdapterAllTool(BaseTool, Generic[E]):
                 **tool_run_kwargs,
             )
         elif AdapterAllToolStructType.WEB_BROWSER == agent_action.tool and isinstance(
-                agent_action, WebBrowserAgentAction
+            agent_action, WebBrowserAgentAction
         ):
             return self.adapter_all_tool.run(
                 **{
@@ -190,8 +195,9 @@ class AdapterAllTool(BaseTool, Generic[E]):
         run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
         **tool_run_kwargs: Any,
     ) -> Any:
-        if AdapterAllToolStructType.CODE_INTERPRETER == agent_action.tool and isinstance(
-            agent_action, CodeInterpreterAgentAction
+        if (
+            AdapterAllToolStructType.CODE_INTERPRETER == agent_action.tool
+            and isinstance(agent_action, CodeInterpreterAgentAction)
         ):
             return await self.adapter_all_tool.arun(
                 **{
@@ -204,7 +210,7 @@ class AdapterAllTool(BaseTool, Generic[E]):
             )
 
         elif AdapterAllToolStructType.DRAWING_TOOL == agent_action.tool and isinstance(
-                agent_action, DrawingToolAgentAction
+            agent_action, DrawingToolAgentAction
         ):
             return await self.adapter_all_tool.arun(
                 **{
@@ -216,7 +222,7 @@ class AdapterAllTool(BaseTool, Generic[E]):
                 **tool_run_kwargs,
             )
         elif AdapterAllToolStructType.WEB_BROWSER == agent_action.tool and isinstance(
-                agent_action, WebBrowserAgentAction
+            agent_action, WebBrowserAgentAction
         ):
             return await self.adapter_all_tool.arun(
                 **{

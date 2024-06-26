@@ -5,7 +5,9 @@ from langchain_core.agents import AgentAction, AgentFinish
 from langchain_core.messages import BaseMessage
 from langchain_core.outputs import ChatGeneration, Generation
 
-from langchain_zhipuai.agents.output_parsers.code_interpreter import CodeInterpreterAgentAction
+from langchain_zhipuai.agents.output_parsers.code_interpreter import (
+    CodeInterpreterAgentAction,
+)
 from langchain_zhipuai.agents.output_parsers.drawing_tool import DrawingToolAgentAction
 from langchain_zhipuai.agents.output_parsers.tools import (
     ToolAgentAction,

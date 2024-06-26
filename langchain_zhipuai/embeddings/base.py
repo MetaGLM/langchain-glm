@@ -19,8 +19,8 @@ from typing import (
 )
 
 import numpy as np
-import zhipuai
 import tiktoken
+import zhipuai
 from langchain_core.embeddings import Embeddings
 from langchain_core.pydantic_v1 import (
     BaseModel,
@@ -160,7 +160,7 @@ class ZhipuAIEmbeddings(BaseModel, Embeddings):
         return params
 
     def _get_len_safe_embeddings(
-            self, texts: List[str], *, chunk_size: Optional[int] = None
+        self, texts: List[str], *, chunk_size: Optional[int] = None
     ) -> List[List[float]]:
         """
         Generate length-safe embeddings for a list of texts.
@@ -187,7 +187,7 @@ class ZhipuAIEmbeddings(BaseModel, Embeddings):
         batched_embeddings: List[List[float]] = []
         for i in _iter:
             response = self.client.create(
-                input=texts[i: i + _chunk_size], **self._invocation_params
+                input=texts[i : i + _chunk_size], **self._invocation_params
             )
             if not isinstance(response, dict):
                 response = response.dict()
@@ -196,7 +196,7 @@ class ZhipuAIEmbeddings(BaseModel, Embeddings):
         return batched_embeddings
 
     def embed_documents(
-            self, texts: List[str], chunk_size: Optional[int] = 0
+        self, texts: List[str], chunk_size: Optional[int] = 0
     ) -> List[List[float]]:
         """Call out to OpenAI's embedding endpoint for embedding search docs.
 

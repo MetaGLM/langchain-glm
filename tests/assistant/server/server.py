@@ -67,12 +67,10 @@ async def chat(
         history=history,
         intermediate_steps=intermediate_steps,
         tools=[
-
             {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}},
             {"type": "web_browser"},
             {"type": "drawing_tool"},
-
-            calculate
+            calculate,
         ],
     )
     chat_iterator = agent_executor.invoke(chat_input=query)

@@ -36,21 +36,11 @@ def default_all_tool_chunk_parser(raw_tool_calls: List[dict]) -> List[ToolCallCh
                 tool_call["code_interpreter"], ensure_ascii=False
             )
             function_name = "code_interpreter"
-        elif (
-            "drawing_tool" in tool_call
-            and tool_call["drawing_tool"] is not None
-        ):
-            function_args = json.dumps(
-                tool_call["drawing_tool"], ensure_ascii=False
-            )
+        elif "drawing_tool" in tool_call and tool_call["drawing_tool"] is not None:
+            function_args = json.dumps(tool_call["drawing_tool"], ensure_ascii=False)
             function_name = "drawing_tool"
-        elif (
-            "web_browser" in tool_call
-            and tool_call["web_browser"] is not None
-        ):
-            function_args = json.dumps(
-                tool_call["web_browser"], ensure_ascii=False
-            )
+        elif "web_browser" in tool_call and tool_call["web_browser"] is not None:
+            function_args = json.dumps(tool_call["web_browser"], ensure_ascii=False)
             function_name = "web_browser"
         else:
             function_args = None

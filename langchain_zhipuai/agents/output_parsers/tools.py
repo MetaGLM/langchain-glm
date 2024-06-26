@@ -16,21 +16,32 @@ from langchain_core.utils.json import (
 )
 from zhipuai.core import BaseModel
 
-from langchain_zhipuai.agent_toolkits.all_tools.struct_type import AdapterAllToolStructType
-from langchain_zhipuai.agents.output_parsers.base import AllToolsMessageToolCallChunk, AllToolsMessageToolCall
-from langchain_zhipuai.agents.output_parsers.code_interpreter import _best_effort_parse_code_interpreter_tool_calls, \
-    _paser_code_interpreter_chunk_input
-from langchain_zhipuai.agents.output_parsers.drawing_tool import _paser_drawing_tool_chunk_input, \
-    _best_effort_parse_drawing_tool_tool_calls
-from langchain_zhipuai.agents.output_parsers.web_browser import _paser_web_browser_chunk_input, \
-    _best_effort_parse_web_browser_tool_calls
+from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
+    AdapterAllToolStructType,
+)
+from langchain_zhipuai.agents.output_parsers.base import (
+    AllToolsMessageToolCall,
+    AllToolsMessageToolCallChunk,
+)
+from langchain_zhipuai.agents.output_parsers.code_interpreter import (
+    _best_effort_parse_code_interpreter_tool_calls,
+    _paser_code_interpreter_chunk_input,
+)
+from langchain_zhipuai.agents.output_parsers.drawing_tool import (
+    _best_effort_parse_drawing_tool_tool_calls,
+    _paser_drawing_tool_chunk_input,
+)
+from langchain_zhipuai.agents.output_parsers.web_browser import (
+    _best_effort_parse_web_browser_tool_calls,
+    _paser_web_browser_chunk_input,
+)
 from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk
 
 logger = logging.getLogger(__name__)
 
 
 def parse_ai_message_to_tool_action(
-        message: BaseMessage,
+    message: BaseMessage,
 ) -> Union[List[AgentAction], AgentFinish]:
     """Parse an AI message potentially containing tool_calls."""
     if not isinstance(message, AIMessage):
@@ -106,14 +117,10 @@ def parse_ai_message_to_tool_action(
                 message.tool_call_chunks
             )
     else:
-        drawing_tool_chunk = _best_effort_parse_drawing_tool_tool_calls(
-            tool_calls
-        )
+        drawing_tool_chunk = _best_effort_parse_drawing_tool_tool_calls(tool_calls)
 
     if drawing_tool_chunk and len(drawing_tool_chunk) > 1:
-        actions.append(
-            _paser_drawing_tool_chunk_input(message, drawing_tool_chunk)
-        )
+        actions.append(_paser_drawing_tool_chunk_input(message, drawing_tool_chunk))
 
     web_browser_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -124,19 +131,17 @@ def parse_ai_message_to_tool_action(
                 message.tool_call_chunks
             )
     else:
-        web_browser_chunk = _best_effort_parse_web_browser_tool_calls(
-            tool_calls
-        )
+        web_browser_chunk = _best_effort_parse_web_browser_tool_calls(tool_calls)
 
     if web_browser_chunk and len(web_browser_chunk) > 1:
-        actions.append(
-            _paser_web_browser_chunk_input(message, web_browser_chunk)
-        )
+        actions.append(_paser_web_browser_chunk_input(message, web_browser_chunk))
 
     # TODO: parse platform tools built-in @langchain_zhipuai
     # delete AdapterAllToolStructType from tool_calls
     tool_calls = [
-        tool_call for tool_call in tool_calls if tool_call["name"] not in AdapterAllToolStructType.__members__.values()
+        tool_call
+        for tool_call in tool_calls
+        if tool_call["name"] not in AdapterAllToolStructType.__members__.values()
     ]
 
     for tool_call in tool_calls:

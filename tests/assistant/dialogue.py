@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 from datetime import datetime
 from typing import Dict, List, Type, TypeVar, cast
@@ -24,7 +25,14 @@ OutputType = TypeVar(
     "OutputType",
     bound="Union[AllToolsAction,AllToolsActionToolStart,AllToolsActionToolEnd,AllToolsFinish,AllToolsLLMStatus]",
 )
-chat_box = ChatBox(assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2.png"))
+chat_box = ChatBox(
+    assistant_avatar=get_img_base64(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "chatchat_icon_blue_square_v2.png",
+        )
+    )
+)
 
 
 def save_session(conv_name: str = None):

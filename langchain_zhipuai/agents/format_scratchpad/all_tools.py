@@ -14,8 +14,12 @@ from langchain_zhipuai.agent_toolkits.all_tools.code_interpreter_tool import (
     CodeInterpreterToolOutput,
 )
 from langchain_zhipuai.agent_toolkits.all_tools.drawing_tool import DrawingToolOutput
-from langchain_zhipuai.agent_toolkits.all_tools.web_browser_tool import WebBrowserToolOutput
-from langchain_zhipuai.agents.output_parsers.code_interpreter import CodeInterpreterAgentAction
+from langchain_zhipuai.agent_toolkits.all_tools.web_browser_tool import (
+    WebBrowserToolOutput,
+)
+from langchain_zhipuai.agents.output_parsers.code_interpreter import (
+    CodeInterpreterAgentAction,
+)
 from langchain_zhipuai.agents.output_parsers.drawing_tool import DrawingToolAgentAction
 from langchain_zhipuai.agents.output_parsers.web_browser import WebBrowserAgentAction
 

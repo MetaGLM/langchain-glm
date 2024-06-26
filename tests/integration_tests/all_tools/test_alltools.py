@@ -113,9 +113,7 @@ async def test_all_tools_drawing_tool(logging_conf):
         model_name="glm-4-alltools",
         tools=[{"type": "drawing_tool"}],
     )
-    chat_iterator = agent_executor.invoke(
-        chat_input="给我画一张猫咪的图片，要是波斯猫"
-    )
+    chat_iterator = agent_executor.invoke(chat_input="给我画一张猫咪的图片，要是波斯猫")
     async for item in chat_iterator:
         if isinstance(item, AllToolsAction):
             print("AllToolsAction:" + str(item.to_json()))
@@ -141,9 +139,7 @@ async def test_all_tools_web_browser(logging_conf):
         model_name="glm-4-alltools",
         tools=[{"type": "web_browser"}],
     )
-    chat_iterator = agent_executor.invoke(
-        chat_input="帮我搜索今天的新闻"
-    )
+    chat_iterator = agent_executor.invoke(chat_input="帮我搜索今天的新闻")
     async for item in chat_iterator:
         if isinstance(item, AllToolsAction):
             print("AllToolsAction:" + str(item.to_json()))

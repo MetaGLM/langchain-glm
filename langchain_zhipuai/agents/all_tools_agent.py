@@ -9,13 +9,14 @@ from pathlib import Path
 from typing import (
     Any,
     Dict,
-    Tuple,
     List,
     Optional,
+    Tuple,
 )
 
 from langchain.agents.agent import Agent, AgentExecutor, AgentOutputParser
 from langchain.agents.tools import InvalidTool
+from langchain.utilities.asyncio import asyncio_timeout
 from langchain_core.agents import AgentAction, AgentFinish, AgentStep
 from langchain_core.callbacks import (
     AsyncCallbackManagerForChainRun,
@@ -28,7 +29,6 @@ from langchain_core.callbacks import (
 from langchain_core.tools import BaseTool
 from langchain_core.utils import get_color_mapping
 
-from langchain.utilities.asyncio import asyncio_timeout
 from langchain_zhipuai.agent_toolkits import AdapterAllTool
 from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
     AdapterAllToolStructType,
@@ -40,11 +40,10 @@ logger = logging.getLogger(__name__)
 
 
 class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
-
     def _call(
-            self,
-            inputs: Dict[str, str],
-            run_manager: Optional[CallbackManagerForChainRun] = None,
+        self,
+        inputs: Dict[str, str],
+        run_manager: Optional[CallbackManagerForChainRun] = None,
     ) -> Dict[str, Any]:
         """Run text through and get agent response."""
         # Construct a mapping of tool name to tool for easy lookup
@@ -89,9 +88,9 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
         return self._return(output, intermediate_steps, run_manager=run_manager)
 
     async def _acall(
-            self,
-            inputs: Dict[str, str],
-            run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
+        self,
+        inputs: Dict[str, str],
+        run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
     ) -> Dict[str, str]:
         """Run text through and get agent response."""
         # Construct a mapping of tool name to tool for easy lookup
@@ -125,7 +124,6 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
 
                     intermediate_steps.extend(next_step_output)
                     if len(next_step_output) == 1:
-
                         # TODO: platform adapter status control, but langchain not output message info,
                         #   so where after paser instance object to let's DrawingToolAgentAction WebBrowserAgentAction
                         #   always output AgentFinish instance
@@ -133,14 +131,16 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
                         agent_action, observation = next_step_action
                         if isinstance(agent_action, DrawingToolAgentAction):
                             tool_return = AgentFinish(
-                                return_values={"output": str(observation)}, log=str(observation)
+                                return_values={"output": str(observation)},
+                                log=str(observation),
                             )
                             return await self._areturn(
                                 tool_return, intermediate_steps, run_manager=run_manager
                             )
                         elif isinstance(agent_action, WebBrowserAgentAction):
                             tool_return = AgentFinish(
-                                return_values={"output": str(observation)}, log=str(observation)
+                                return_values={"output": str(observation)},
+                                log=str(observation),
                             )
 
                             return await self._areturn(
@@ -174,11 +174,11 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
             )
 
     def _perform_agent_action(
-            self,
-            name_to_tool_map: Dict[str, BaseTool],
-            color_mapping: Dict[str, str],
-            agent_action: AgentAction,
-            run_manager: Optional[CallbackManagerForChainRun] = None,
+        self,
+        name_to_tool_map: Dict[str, BaseTool],
+        color_mapping: Dict[str, str],
+        agent_action: AgentAction,
+        run_manager: Optional[CallbackManagerForChainRun] = None,
     ) -> AgentStep:
         if run_manager:
             run_manager.on_agent_action(agent_action, color="green")
@@ -226,11 +226,11 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
         return AgentStep(action=agent_action, observation=observation)
 
     async def _aperform_agent_action(
-            self,
-            name_to_tool_map: Dict[str, BaseTool],
-            color_mapping: Dict[str, str],
-            agent_action: AgentAction,
-            run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
+        self,
+        name_to_tool_map: Dict[str, BaseTool],
+        color_mapping: Dict[str, str],
+        agent_action: AgentAction,
+        run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
     ) -> AgentStep:
         if run_manager:
             await run_manager.on_agent_action(

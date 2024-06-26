@@ -16,8 +16,13 @@ from langchain_core.utils.json import (
 )
 from zhipuai.core import BaseModel
 
-from langchain_zhipuai.agent_toolkits.all_tools.struct_type import AdapterAllToolStructType
-from langchain_zhipuai.agents.output_parsers.base import AllToolsMessageToolCall, AllToolsMessageToolCallChunk
+from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
+    AdapterAllToolStructType,
+)
+from langchain_zhipuai.agents.output_parsers.base import (
+    AllToolsMessageToolCall,
+    AllToolsMessageToolCallChunk,
+)
 from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk
 
 logger = logging.getLogger(__name__)
@@ -30,7 +35,7 @@ class WebBrowserAgentAction(ToolAgentAction):
 
 
 def _best_effort_parse_web_browser_tool_calls(
-        tool_call_chunks: List[dict],
+    tool_call_chunks: List[dict],
 ) -> List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]:
     web_browser_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -67,10 +72,10 @@ def _best_effort_parse_web_browser_tool_calls(
 
 
 def _paser_web_browser_chunk_input(
-        message: BaseMessage,
-        web_browser_chunk: List[
-            Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
-        ],
+    message: BaseMessage,
+    web_browser_chunk: List[
+        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+    ],
 ) -> WebBrowserAgentAction:
     try:
         input_log_chunk = []
@@ -84,12 +89,14 @@ def _paser_web_browser_chunk_input(
             if "outputs" in interpreter_chunk_args:
                 outputs.extend(interpreter_chunk_args["outputs"])
 
-        out_logs = [f"title:{logs['title']}\nlink:{logs['link']}" for logs in outputs if "title" in logs]
+        out_logs = [
+            f"title:{logs['title']}\nlink:{logs['link']}"
+            for logs in outputs
+            if "title" in logs
+        ]
         out_str = "\r\n".join(out_logs)
         log = f"{''.join(input_log_chunk)}\r\n{out_str}"
-        tool_call_id = (
-            web_browser_chunk[0].id if web_browser_chunk[0].id else "abc"
-        )
+        tool_call_id = web_browser_chunk[0].id if web_browser_chunk[0].id else "abc"
         web_browser_action = WebBrowserAgentAction(
             tool=AdapterAllToolStructType.WEB_BROWSER,
             tool_input="".join(input_log_chunk),

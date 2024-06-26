@@ -30,7 +30,9 @@ from pydantic.v1 import BaseModel, Field, validator
 from langchain_zhipuai.agent_toolkits.all_tools.registry import (
     TOOL_STRUCT_TYPE_TO_TOOL_CLASS,
 )
-from langchain_zhipuai.agent_toolkits.all_tools.struct_type import AdapterAllToolStructType
+from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
+    AdapterAllToolStructType,
+)
 from langchain_zhipuai.agent_toolkits.all_tools.tool import (
     AdapterAllTool,
     BaseToolOutput,
@@ -73,8 +75,7 @@ def _is_assistants_builtin_tool(
 def _get_assistants_tool(
     tool: Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool],
 ) -> Dict[str, Any]:
-    """Convert a raw function/class to an ZhipuAI tool.
-    """
+    """Convert a raw function/class to an ZhipuAI tool."""
     if _is_assistants_builtin_tool(tool):
         return tool  # type: ignore
     else:

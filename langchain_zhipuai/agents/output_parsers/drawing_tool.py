@@ -16,8 +16,13 @@ from langchain_core.utils.json import (
 )
 from zhipuai.core import BaseModel
 
-from langchain_zhipuai.agent_toolkits.all_tools.struct_type import AdapterAllToolStructType
-from langchain_zhipuai.agents.output_parsers.base import AllToolsMessageToolCall, AllToolsMessageToolCallChunk
+from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
+    AdapterAllToolStructType,
+)
+from langchain_zhipuai.agents.output_parsers.base import (
+    AllToolsMessageToolCall,
+    AllToolsMessageToolCallChunk,
+)
 from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk
 
 logger = logging.getLogger(__name__)
@@ -30,7 +35,7 @@ class DrawingToolAgentAction(ToolAgentAction):
 
 
 def _best_effort_parse_drawing_tool_tool_calls(
-        tool_call_chunks: List[dict],
+    tool_call_chunks: List[dict],
 ) -> List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]:
     drawing_tool_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -67,10 +72,10 @@ def _best_effort_parse_drawing_tool_tool_calls(
 
 
 def _paser_drawing_tool_chunk_input(
-        message: BaseMessage,
-        drawing_tool_chunk: List[
-            Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
-        ],
+    message: BaseMessage,
+    drawing_tool_chunk: List[
+        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+    ],
 ) -> DrawingToolAgentAction:
     try:
         input_log_chunk = []
@@ -86,9 +91,7 @@ def _paser_drawing_tool_chunk_input(
 
         out_logs = [logs["image"] for logs in outputs if "image" in logs]
         log = f"{''.join(input_log_chunk)}\n{''.join(out_logs)}\n"
-        tool_call_id = (
-            drawing_tool_chunk[0].id if drawing_tool_chunk[0].id else "abc"
-        )
+        tool_call_id = drawing_tool_chunk[0].id if drawing_tool_chunk[0].id else "abc"
         drawing_tool_action = DrawingToolAgentAction(
             tool=AdapterAllToolStructType.DRAWING_TOOL,
             tool_input="".join(input_log_chunk),

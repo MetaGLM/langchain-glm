@@ -1,11 +1,13 @@
+import sys
+
+import pytest
+
 from langchain_zhipuai.agent_toolkits.all_tools.code_interpreter_tool import (
     CodeInterpreterAllToolExecutor,
 )
 
-import sys
-import pytest
-
 # 3.9以上才能运行
+
 
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="Requires Python 3.9 or higher")
 def test_python_ast_interpreter():

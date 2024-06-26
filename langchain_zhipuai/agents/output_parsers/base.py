@@ -1,5 +1,6 @@
+from typing import Any, Dict, Optional
+
 from zhipuai.core import BaseModel
-from typing import Optional, Dict, Any
 
 
 class AllToolsMessageToolCall(BaseModel):
