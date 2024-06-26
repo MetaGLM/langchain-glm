@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import (
     Any,
     Dict,
-    Iterator,
+    Tuple,
     List,
     Optional,
 )
@@ -26,22 +26,159 @@ from langchain_core.callbacks import (
     Callbacks,
 )
 from langchain_core.tools import BaseTool
+from langchain_core.utils import get_color_mapping
 
+from langchain.utilities.asyncio import asyncio_timeout
 from langchain_zhipuai.agent_toolkits import AdapterAllTool
 from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
     AdapterAllToolStructType,
 )
+from langchain_zhipuai.agents.output_parsers.drawing_tool import DrawingToolAgentAction
+from langchain_zhipuai.agents.output_parsers.web_browser import WebBrowserAgentAction
 
 logger = logging.getLogger(__name__)
 
 
 class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
+
+    def _call(
+            self,
+            inputs: Dict[str, str],
+            run_manager: Optional[CallbackManagerForChainRun] = None,
+    ) -> Dict[str, Any]:
+        """Run text through and get agent response."""
+        # Construct a mapping of tool name to tool for easy lookup
+        name_to_tool_map = {tool.name: tool for tool in self.tools}
+        # We construct a mapping from each tool to a color, used for logging.
+        color_mapping = get_color_mapping(
+            [tool.name for tool in self.tools], excluded_colors=["green", "red"]
+        )
+        intermediate_steps: List[Tuple[AgentAction, str]] = []
+        # Let's start tracking the number of iterations and time elapsed
+        iterations = 0
+        time_elapsed = 0.0
+        start_time = time.time()
+        # We now enter the agent loop (until it returns something).
+        while self._should_continue(iterations, time_elapsed):
+            next_step_output = self._take_next_step(
+                name_to_tool_map,
+                color_mapping,
+                inputs,
+                intermediate_steps,
+                run_manager=run_manager,
+            )
+            if isinstance(next_step_output, AgentFinish):
+                return self._return(
+                    next_step_output, intermediate_steps, run_manager=run_manager
+                )
+
+            intermediate_steps.extend(next_step_output)
+            if len(next_step_output) == 1:
+                next_step_action = next_step_output[0]
+                # See if tool should return directly
+                tool_return = self._get_tool_return(next_step_action)
+                if tool_return is not None:
+                    return self._return(
+                        tool_return, intermediate_steps, run_manager=run_manager
+                    )
+            iterations += 1
+            time_elapsed = time.time() - start_time
+        output = self.agent.return_stopped_response(
+            self.early_stopping_method, intermediate_steps, **inputs
+        )
+        return self._return(output, intermediate_steps, run_manager=run_manager)
+
+    async def _acall(
+            self,
+            inputs: Dict[str, str],
+            run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
+    ) -> Dict[str, str]:
+        """Run text through and get agent response."""
+        # Construct a mapping of tool name to tool for easy lookup
+        name_to_tool_map = {tool.name: tool for tool in self.tools}
+        # We construct a mapping from each tool to a color, used for logging.
+        color_mapping = get_color_mapping(
+            [tool.name for tool in self.tools], excluded_colors=["green"]
+        )
+        intermediate_steps: List[Tuple[AgentAction, str]] = []
+        # Let's start tracking the number of iterations and time elapsed
+        iterations = 0
+        time_elapsed = 0.0
+        start_time = time.time()
+        # We now enter the agent loop (until it returns something).
+        try:
+            async with asyncio_timeout(self.max_execution_time):
+                while self._should_continue(iterations, time_elapsed):
+                    next_step_output = await self._atake_next_step(
+                        name_to_tool_map,
+                        color_mapping,
+                        inputs,
+                        intermediate_steps,
+                        run_manager=run_manager,
+                    )
+                    if isinstance(next_step_output, AgentFinish):
+                        return await self._areturn(
+                            next_step_output,
+                            intermediate_steps,
+                            run_manager=run_manager,
+                        )
+
+                    intermediate_steps.extend(next_step_output)
+                    if len(next_step_output) == 1:
+
+                        # TODO: platform adapter status control, but langchain not output message info,
+                        #   so where after paser instance object to let's DrawingToolAgentAction WebBrowserAgentAction
+                        #   always output AgentFinish instance
+                        next_step_action = next_step_output[0]
+                        agent_action, observation = next_step_action
+                        if isinstance(agent_action, DrawingToolAgentAction):
+                            tool_return = AgentFinish(
+                                return_values={"output": str(observation)}, log=str(observation)
+                            )
+                            return await self._areturn(
+                                tool_return, intermediate_steps, run_manager=run_manager
+                            )
+                        elif isinstance(agent_action, WebBrowserAgentAction):
+                            tool_return = AgentFinish(
+                                return_values={"output": str(observation)}, log=str(observation)
+                            )
+
+                            return await self._areturn(
+                                tool_return, intermediate_steps, run_manager=run_manager
+                            )
+
+                    if len(next_step_output) == 1:
+                        next_step_action = next_step_output[0]
+                        # See if tool should return directly
+                        tool_return = self._get_tool_return(next_step_action)
+                        if tool_return is not None:
+                            return await self._areturn(
+                                tool_return, intermediate_steps, run_manager=run_manager
+                            )
+
+                    iterations += 1
+                    time_elapsed = time.time() - start_time
+                output = self.agent.return_stopped_response(
+                    self.early_stopping_method, intermediate_steps, **inputs
+                )
+                return await self._areturn(
+                    output, intermediate_steps, run_manager=run_manager
+                )
+        except (TimeoutError, asyncio.TimeoutError):
+            # stop early when interrupted by the async timeout
+            output = self.agent.return_stopped_response(
+                self.early_stopping_method, intermediate_steps, **inputs
+            )
+            return await self._areturn(
+                output, intermediate_steps, run_manager=run_manager
+            )
+
     def _perform_agent_action(
-        self,
-        name_to_tool_map: Dict[str, BaseTool],
-        color_mapping: Dict[str, str],
-        agent_action: AgentAction,
-        run_manager: Optional[CallbackManagerForChainRun] = None,
+            self,
+            name_to_tool_map: Dict[str, BaseTool],
+            color_mapping: Dict[str, str],
+            agent_action: AgentAction,
+            run_manager: Optional[CallbackManagerForChainRun] = None,
     ) -> AgentStep:
         if run_manager:
             run_manager.on_agent_action(agent_action, color="green")
@@ -89,11 +226,11 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
         return AgentStep(action=agent_action, observation=observation)
 
     async def _aperform_agent_action(
-        self,
-        name_to_tool_map: Dict[str, BaseTool],
-        color_mapping: Dict[str, str],
-        agent_action: AgentAction,
-        run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
+            self,
+            name_to_tool_map: Dict[str, BaseTool],
+            color_mapping: Dict[str, str],
+            agent_action: AgentAction,
+            run_manager: Optional[AsyncCallbackManagerForChainRun] = None,
     ) -> AgentStep:
         if run_manager:
             await run_manager.on_agent_action(
