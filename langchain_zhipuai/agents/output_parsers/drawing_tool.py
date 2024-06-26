@@ -89,8 +89,10 @@ def _paser_drawing_tool_chunk_input(
             if "outputs" in interpreter_chunk_args:
                 outputs.extend(interpreter_chunk_args["outputs"])
 
-        out_logs = [logs["image"] for logs in outputs if "image" in logs]
-        log = f"{''.join(input_log_chunk)}\n{''.join(out_logs)}\n"
+        out_logs = [f'<img src="{logs.get("image")}" width="300">'
+                    for logs in outputs if "image" in logs]
+         
+        log = f"{''.join(input_log_chunk)}\r\n {''.join(out_logs)}"
         tool_call_id = drawing_tool_chunk[0].id if drawing_tool_chunk[0].id else "abc"
         drawing_tool_action = DrawingToolAgentAction(
             tool=AdapterAllToolStructType.DRAWING_TOOL,
