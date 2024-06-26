@@ -84,13 +84,14 @@ def _paser_web_browser_chunk_input(
             if "outputs" in interpreter_chunk_args:
                 outputs.extend(interpreter_chunk_args["outputs"])
 
-        out_logs = [logs["logs"] for logs in outputs if "logs" in logs]
-        log = f"{''.join(input_log_chunk)}\n{''.join(out_logs)}\n"
+        out_logs = [f"title:{logs['title']}\nlink:{logs['link']}" for logs in outputs if "title" in logs]
+        out_str = "\r\n".join(out_logs)
+        log = f"{''.join(input_log_chunk)}\r\n{out_str}"
         tool_call_id = (
             web_browser_chunk[0].id if web_browser_chunk[0].id else "abc"
         )
         web_browser_action = WebBrowserAgentAction(
-            tool=AdapterAllToolStructType.DRAWING_TOOL,
+            tool=AdapterAllToolStructType.WEB_BROWSER,
             tool_input="".join(input_log_chunk),
             outputs=outputs,
             log=log,
