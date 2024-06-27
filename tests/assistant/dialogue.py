@@ -202,7 +202,7 @@ def dialogue_page(client: ZhipuAIPluginsClient):
         metadata = {
             "message_id": message_id,
         }
-
+        function_call = {}
         for item in client.chat(query=prompt, history=history):
             # clear initial message
             if not started:
@@ -229,16 +229,20 @@ def dialogue_page(client: ZhipuAIPluginsClient):
                     formatted_data, indent=2, ensure_ascii=False
                 )
                 text = """\n```{}\n```\n""".format(formatted_json)
-                function_call = text
-                chat_box.insert_msg(  # TODO: insert text directly not shown
-                    Markdown(
-                        text,
-                        title=f"正在解读{item.tool}工具输出结果...",
-                        in_expander=True,
-                        expanded=True,
-                        state="running",
-                    )
-                )
+                function_call[item.run_id] = text
+                tool_metadata = {
+                    "message_id": item.run_id,
+                }
+                # chat_box.insert_msg(
+                #     Markdown(
+                #         text,
+                #         title=f"正在解读{item.tool}工具输出结果...",
+                #         in_expander=True,
+                #         expanded=True,
+                #         state="running",
+                #         metadata=tool_metadata
+                #     )
+                # )
 
             elif "AllToolsActionToolEnd" == item["class_name"]:
                 cast_type: Type[OutputType] = AllToolsActionToolEnd
@@ -246,12 +250,14 @@ def dialogue_page(client: ZhipuAIPluginsClient):
 
                 text = """\n```\nObservation:\n{}\n```\n""".format(item.tool_output)
 
-                chat_box.update_msg(
-                    function_call + "\n" + text,
-                    title=f"Function call {item.tool}.",
-                    streaming=False,
-                    expanded=False,
-                    state="complete",
+                chat_box.insert_msg(
+                    Markdown(
+                        item.run_id+ "\n" + function_call[item.run_id] + "\n" + text,
+                        title=f"Function call {item.tool}.",
+                        in_expander=True,
+                        expanded=True,
+                        state="complete",
+                    )
                 )
 
             elif "AllToolsLLMStatus" == item["class_name"]:

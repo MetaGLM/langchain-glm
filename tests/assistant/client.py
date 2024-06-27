@@ -216,7 +216,7 @@ class ZhipuAIPluginsClient:
                         if as_json:
                             try:
                                 if chunk.startswith("data: "):
-                                    data = json.loads(chunk_cache + chunk[6:-2])
+                                    data = json.loads(chunk_cache + chunk[6:-4])
                                 elif chunk.startswith(":"):  # skip sse comment line
                                     continue
                                 else:
@@ -225,14 +225,9 @@ class ZhipuAIPluginsClient:
                                 chunk_cache = ""
                                 yield data
                             except Exception as e:
-                                msg = f"接口返回json错误： ‘{chunk}’。错误信息是：{e}。"
-                                logger.error(
-                                    f"{e.__class__.__name__}: {msg}",
-                                    exc_info=e if log_verbose else None,
-                                )
 
                                 if chunk.startswith("data: "):
-                                    chunk_cache += chunk[6:-2]
+                                    chunk_cache += chunk[6:]
                                 elif chunk.startswith(":"):  # skip sse comment line
                                     continue
                                 else:
