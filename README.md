@@ -94,19 +94,24 @@ def shell(query: str = Field(description="要执行的命令")):
 ```
 
 ### 4. 创建一个代理执行器
-这部分设置了一个执行器来运行多个工具。它使用一个叫glm-4-alltools的模型，并包括之前定义的shell工具。
-`sandbox`: 指定代码沙盒环境，默认 = auto，即自动调用沙盒环境执行代码。 设置 sandbox = none，不启用沙盒环境后。
-代码生成后返回状态 status = requires_action，需要用户提交代码执行结果。
+我们的glm-4-alltools的模型提供了平台工具，通过ZhipuAIAllToolsRunnable，你可以非常方便的设置了一个执行器来运行多个工具。
+ 
+code_interpreter:使用`sandbox`指定代码沙盒环境，
+    默认 = auto，即自动调用沙盒环境执行代码。 
+    设置 sandbox = none，不启用沙盒环境。
+
+web_browser:使用`web_browser`指定浏览器工具。
+drawing_tool:使用`drawing_tool`指定绘图工具。
 
 ```python
 agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
     model_name="glm-4-alltools",
-    tools=[{
-        "type": "code_interpreter",
-        "code_interpreter": {
-            "sandbox": 'auto'
-        }
-    }, shell],
+    tools=[
+        {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}},
+        {"type": "web_browser"},
+        {"type": "drawing_tool"},
+        shell
+    ],
 )
 
 ```
@@ -160,7 +165,7 @@ python tests/assistant/server/server.py
 
 - 运行前端服务[test_chat.py](tests/assistant/test_chat.py)
 ```shell
-python tests/assistant/test_chat.py
+python tests/assistant/start_chat.py
 ```
 
 > 展示
