@@ -93,6 +93,8 @@ def _paser_web_browser_chunk_input(
                 input_log_chunk.append(obj)
                 outputs.append(interpreter_chunk_args["outputs"])
 
+        if input_log_chunk[-1] is not obj:
+            input_log_chunk.append(obj)
         # segments the list based on these positions, and then concatenates each segment into a string
         # Find positions of object() instances
         positions = find_object_positions(input_log_chunk, obj)
@@ -103,6 +105,9 @@ def _paser_web_browser_chunk_input(
         tool_call_id = web_browser_chunk[0].id if web_browser_chunk[0].id else "abc"
         web_browser_action_result_stack: deque = deque()
         for i, action in enumerate(result_actions):
+            if len(result_actions) > len(outputs):
+                outputs.insert(i, [])
+
             out_logs = [
                 f"title:{logs['title']}\nlink:{logs['link']}\ncontent:{logs['content']}"
                 for logs in outputs[i]

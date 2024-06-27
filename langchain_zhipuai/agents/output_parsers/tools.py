@@ -149,14 +149,58 @@ def parse_ai_message_to_tool_action(
 
     function_tool_result_stack = _paser_function_chunk_input(message, function_tool_calls)
 
-    for too_call in tool_calls:
-        if 'function' == too_call["name"]:
-            actions.append(function_tool_result_stack.popleft())
-        elif too_call["name"] == AdapterAllToolStructType.CODE_INTERPRETER:
-            actions.append(code_interpreter_action_result_stack.popleft())
-        elif too_call["name"] == AdapterAllToolStructType.WEB_BROWSER:
-            actions.append(web_browser_action_result_stack.popleft())
-        elif too_call["name"] == AdapterAllToolStructType.DRAWING_TOOL:
-            actions.append(drawing_tool_result_stack.popleft())
+    if isinstance(message, ALLToolsMessageChunk):
+        call_chunks = _paser_object_positions(message.tool_call_chunks)
+
+        for too_call_name in call_chunks:
+            if too_call_name == AdapterAllToolStructType.CODE_INTERPRETER:
+                actions.append(code_interpreter_action_result_stack.popleft())
+            elif too_call_name == AdapterAllToolStructType.WEB_BROWSER:
+                actions.append(web_browser_action_result_stack.popleft())
+            elif too_call_name == AdapterAllToolStructType.DRAWING_TOOL:
+                actions.append(drawing_tool_result_stack.popleft())
+            else:
+                actions.append(function_tool_result_stack.popleft())
+    else:
+
+        for too_call in tool_calls:
+            if 'function' == too_call["name"]:
+                actions.append(function_tool_result_stack.popleft())
+            elif too_call["name"] == AdapterAllToolStructType.CODE_INTERPRETER:
+                actions.append(code_interpreter_action_result_stack.popleft())
+            elif too_call["name"] == AdapterAllToolStructType.WEB_BROWSER:
+                actions.append(web_browser_action_result_stack.popleft())
+            elif too_call["name"] == AdapterAllToolStructType.DRAWING_TOOL:
+                actions.append(drawing_tool_result_stack.popleft())
 
     return actions
+
+
+def _paser_object_positions(tool_call_chunks: List[ToolCallChunk]):
+    call_chunks = []
+    last_name = None
+    for call_chunk in tool_call_chunks:
+        if call_chunk['name'] in AdapterAllToolStructType.__members__.values():
+
+            if isinstance(call_chunk["args"], str):
+                args_ = parse_partial_json(call_chunk["args"])
+            else:
+                args_ = call_chunk["args"]
+            if not isinstance(args_, dict):
+                raise ValueError("Malformed args.")
+
+            if "outputs" in args_:
+
+                call_chunks.append(call_chunk['name'])
+                last_name = call_chunk['name']
+
+        else:
+            if call_chunk['name'] != last_name:
+                call_chunks.append(call_chunk['name'])
+                last_name = call_chunk['name']
+
+    if len(call_chunks) == 0:
+        call_chunks.append(tool_call_chunks[-1]['name'])
+    elif tool_call_chunks[-1]['name'] != call_chunks[-1]:
+        call_chunks.append(tool_call_chunks[-1]['name'])
+    return call_chunks

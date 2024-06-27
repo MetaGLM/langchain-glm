@@ -593,8 +593,14 @@ class ChatZhipuAI(BaseChatModel):
                     tool_calls, invalid_tool_calls = _paser_chunk(chunk.message.tool_call_chunks)
 
                     for chunk_tool in invalid_tool_calls:
+
                         if isinstance(chunk_tool["args"], str):
-                            args_ = parse_partial_json(chunk_tool["args"])
+                            try:
+                                args_ = parse_partial_json(chunk_tool["args"])
+                            except Exception as e:
+                                args_ = {
+                                    "input": chunk_tool["args"]
+                                }
                         else:
                             args_ = chunk_tool["args"]
                         if not isinstance(args_, dict):
@@ -604,7 +610,10 @@ class ChatZhipuAI(BaseChatModel):
                             await run_manager.on_llm_new_token(
                                 cast(str, args_['input']), chunk=chunk
                             )
-
+                        else:
+                            await run_manager.on_llm_new_token(
+                                cast(str, args_), chunk=chunk
+                            )
                 else:
                     await run_manager.on_llm_new_token(
                         cast(str, chunk.message.content), chunk=chunk

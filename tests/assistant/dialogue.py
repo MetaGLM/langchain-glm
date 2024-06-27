@@ -154,7 +154,7 @@ def dialogue_page(client: ZhipuAIPluginsClient):
             rerun()
 
     with st.sidebar:
-        tab1, _ = st.tabs(["会话设置", "test"])
+        tab1, _ = st.tabs(["会话设置", "|"])
 
         with tab1:
             # 会话

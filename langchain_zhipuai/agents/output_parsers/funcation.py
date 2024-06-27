@@ -51,8 +51,8 @@ def _paser_function_chunk_input(
             )
         return function_action_result_stack
     except Exception as e:
-        logger.error(f"Error parsing code_interpreter_chunk: {e}", exc_info=True)
+        logger.error(f"Error parsing function_chunk: {e}", exc_info=True)
         raise OutputParserException(
-            f"Could not parse tool input: code_interpreter because "
+            f"Error parsing function_chunk: {e} "
             f"the `arguments` is not valid JSON."
         )

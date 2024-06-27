@@ -93,6 +93,8 @@ def _paser_drawing_tool_chunk_input(
                 input_log_chunk.append(obj)
                 outputs.append(interpreter_chunk_args["outputs"])
 
+        if input_log_chunk[-1] is not obj:
+            input_log_chunk.append(obj)
         # segments the list based on these positions, and then concatenates each segment into a string
         # Find positions of object() instances
         positions = find_object_positions(input_log_chunk, obj)
@@ -103,6 +105,9 @@ def _paser_drawing_tool_chunk_input(
         tool_call_id = drawing_tool_chunk[0].id if drawing_tool_chunk[0].id else "abc"
         drawing_tool_action_result_stack: deque = deque()
         for i, action in enumerate(result_actions):
+            if len(result_actions) > len(outputs):
+                outputs.insert(i, [])
+
             out_logs = [f'<img src="{logs.get("image")}" width="300">'
                         for logs in outputs[i] if "image" in logs]
 
