@@ -216,7 +216,8 @@ def dialogue_page(client: ZhipuAIPluginsClient):
             elif "AllToolsFinish" == item["class_name"]:
                 cast_type: Type[OutputType] = AllToolsFinish
                 item = cast(OutputType, construct_type(type_=cast_type, value=item))
-                chat_box.update_msg("AllToolsFinish:" + item.log)
+                finish = True
+                chat_box.insert_msg(item.log)
             elif "AllToolsActionToolStart" == item["class_name"]:
                 cast_type: Type[OutputType] = AllToolsActionToolStart
                 item = cast(OutputType, construct_type(type_=cast_type, value=item))
@@ -294,7 +295,8 @@ def dialogue_page(client: ZhipuAIPluginsClient):
                         expanded=False,
                         state="complete",
                     )
-                    chat_box.insert_msg(item.text)
+                    if not finish:
+                        chat_box.insert_msg(item.text)
                 else:
                     st.write("item.status :" + item.status + item.text)
 

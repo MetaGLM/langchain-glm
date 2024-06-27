@@ -130,12 +130,15 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
                         #   so where after paser instance object to let's DrawingToolAgentAction WebBrowserAgentAction
                         #   always output AgentFinish instance
                         continue_action = False
+                        list1 = list(name_to_tool_map.keys())
+                        list2 = [
+                            AdapterAllToolStructType.WEB_BROWSER,
+                            AdapterAllToolStructType.DRAWING_TOOL,
+                        ]
 
+                        exist_tools = list(set(list1) - set(list2))
                         for next_step_action, observation in next_step_output:
-                            if next_step_action.tool not in [
-                                AdapterAllToolStructType.WEB_BROWSER,
-                                AdapterAllToolStructType.DRAWING_TOOL,
-                            ]:
+                            if next_step_action.tool in exist_tools:
                                 continue_action = True
                                 break
 

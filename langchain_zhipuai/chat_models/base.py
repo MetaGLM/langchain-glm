@@ -500,7 +500,7 @@ class ChatZhipuAI(BaseChatModel):
                     if chunk.message.id is None:
                         chunk.message.id = f"run-{run_manager.run_id}"
                     chunk.message.response_metadata = _gen_info_and_msg_metadata(chunk)
-                    if isinstance(chunk.message, ALLToolsMessageChunk) and chunk.message.content != "":
+                    if isinstance(chunk.message, ALLToolsMessageChunk) and chunk.message.content == "":
                         tool_calls, invalid_tool_calls = _paser_chunk(chunk.message.tool_call_chunks)
 
                         for chunk_tool in invalid_tool_calls:
@@ -513,7 +513,7 @@ class ChatZhipuAI(BaseChatModel):
                             if "input" in args_:
 
                                 run_manager.on_llm_new_token(
-                                    cast(str, args_), chunk=chunk
+                                    cast(str, args_['input']), chunk=chunk
                                 )
 
                     else:
@@ -589,7 +589,7 @@ class ChatZhipuAI(BaseChatModel):
                 if chunk.message.id is None:
                     chunk.message.id = f"run-{run_manager.run_id}"
                 chunk.message.response_metadata = _gen_info_and_msg_metadata(chunk)
-                if isinstance(chunk.message, ALLToolsMessageChunk) and chunk.message.content != "":
+                if isinstance(chunk.message, ALLToolsMessageChunk) and chunk.message.content == "":
                     tool_calls, invalid_tool_calls = _paser_chunk(chunk.message.tool_call_chunks)
 
                     for chunk_tool in invalid_tool_calls:
@@ -602,7 +602,7 @@ class ChatZhipuAI(BaseChatModel):
                         if "input" in args_:
 
                             await run_manager.on_llm_new_token(
-                                cast(str, args_), chunk=chunk
+                                cast(str, args_['input']), chunk=chunk
                             )
 
                 else:
