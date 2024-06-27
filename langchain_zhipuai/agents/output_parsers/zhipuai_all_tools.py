@@ -1,6 +1,7 @@
 from typing import List, Union
 
 from langchain.agents.agent import MultiActionAgentOutputParser
+from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain_core.agents import AgentAction, AgentFinish
 from langchain_core.messages import BaseMessage
 from langchain_core.outputs import ChatGeneration, Generation
@@ -10,7 +11,6 @@ from langchain_zhipuai.agents.output_parsers.code_interpreter import (
 )
 from langchain_zhipuai.agents.output_parsers.drawing_tool import DrawingToolAgentAction
 from langchain_zhipuai.agents.output_parsers.tools import (
-    ToolAgentAction,
     parse_ai_message_to_tool_action,
 )
 from langchain_zhipuai.agents.output_parsers.web_browser import WebBrowserAgentAction

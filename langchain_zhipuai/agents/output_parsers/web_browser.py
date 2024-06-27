@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import deque
 from json import JSONDecodeError
 from typing import Any, Dict, List, Optional, Union
 
@@ -19,6 +20,7 @@ from zhipuai.core import BaseModel
 from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
     AdapterAllToolStructType,
 )
+from langchain_zhipuai.agents.output_parsers._utils import find_object_positions, concatenate_segments
 from langchain_zhipuai.agents.output_parsers.base import (
     AllToolsMessageToolCall,
     AllToolsMessageToolCallChunk,
@@ -35,7 +37,7 @@ class WebBrowserAgentAction(ToolAgentAction):
 
 
 def _best_effort_parse_web_browser_tool_calls(
-    tool_call_chunks: List[dict],
+        tool_call_chunks: List[dict],
 ) -> List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]:
     web_browser_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -72,41 +74,52 @@ def _best_effort_parse_web_browser_tool_calls(
 
 
 def _paser_web_browser_chunk_input(
-    message: BaseMessage,
-    web_browser_chunk: List[
-        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
-    ],
-) -> WebBrowserAgentAction:
+        message: BaseMessage,
+        web_browser_chunk: List[
+            Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+        ],
+) -> deque[WebBrowserAgentAction]:
     try:
         input_log_chunk = []
 
-        outputs = []
+        outputs: List[List[dict]] = []
+        obj = object()
         for interpreter_chunk in web_browser_chunk:
             interpreter_chunk_args = interpreter_chunk.args
 
             if "input" in interpreter_chunk_args:
                 input_log_chunk.append(interpreter_chunk_args["input"])
             if "outputs" in interpreter_chunk_args:
-                outputs.extend(interpreter_chunk_args["outputs"])
+                input_log_chunk.append(obj)
+                outputs.append(interpreter_chunk_args["outputs"])
 
-        out_logs = [
-            f"title:{logs['title']}\nlink:{logs['link']}"
-            for logs in outputs
-            if "title" in logs
-        ]
-        out_str = "\r\n".join(out_logs)
-        log = f"{''.join(input_log_chunk)}\r\n{out_str}"
+        # segments the list based on these positions, and then concatenates each segment into a string
+        # Find positions of object() instances
+        positions = find_object_positions(input_log_chunk, obj)
+
+        # Concatenate segments
+        result_actions = concatenate_segments(input_log_chunk, positions)
+
         tool_call_id = web_browser_chunk[0].id if web_browser_chunk[0].id else "abc"
-        web_browser_action = WebBrowserAgentAction(
-            tool=AdapterAllToolStructType.WEB_BROWSER,
-            tool_input="".join(input_log_chunk),
-            outputs=outputs,
-            log=log,
-            message_log=[message],
-            tool_call_id=tool_call_id,
-        )
-
-        return web_browser_action
+        web_browser_action_result_stack: deque = deque()
+        for i, action in enumerate(result_actions):
+            out_logs = [
+                f"title:{logs['title']}\nlink:{logs['link']}\ncontent:{logs['content']}"
+                for logs in outputs[i]
+                if "title" in logs
+            ]
+            out_str = '\n'.join(out_logs)
+            log = f"{action}\r\n{out_str}"
+            web_browser_action = WebBrowserAgentAction(
+                tool=AdapterAllToolStructType.WEB_BROWSER,
+                tool_input=action,
+                outputs=outputs[i],
+                log=log,
+                message_log=[message],
+                tool_call_id=tool_call_id,
+            )
+            web_browser_action_result_stack.append(web_browser_action)
+        return web_browser_action_result_stack
     except Exception as e:
         logger.error(f"Error parsing web_browser_chunk: {e}", exc_info=True)
         raise OutputParserException(

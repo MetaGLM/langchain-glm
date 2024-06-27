@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
+from langchain_core.outputs import (
+    ChatGeneration,
+    ChatGenerationChunk,
+    ChatResult,
+    LLMResult,
+    RunInfo,
+)
 from typing import (
     Any,
     AsyncIterator,
@@ -21,11 +27,18 @@ from typing import (
     TypedDict,
     Union,
     cast,
+    TYPE_CHECKING
 )
 
 import zhipuai
+from langchain_core.load import dumpd, dumps
 from langchain_core.callbacks import (
+    AsyncCallbackManager,
+    AsyncCallbackManagerForLLMRun,
+    BaseCallbackManager,
+    CallbackManager,
     CallbackManagerForLLMRun,
+    Callbacks,
 )
 from langchain_core.language_models import LanguageModelInput
 from langchain_core.language_models.chat_models import (
@@ -47,12 +60,11 @@ from langchain_core.messages import (
     SystemMessage,
     SystemMessageChunk,
     ToolMessage,
-    ToolMessageChunk,
+    ToolMessageChunk, ToolCall,
 )
 from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResult
-from langchain_core.pydantic_v1 import BaseModel, Field, SecretStr, root_validator
-from langchain_core.runnables import Runnable
-from langchain_core.tools import BaseTool
+from langchain_core.pydantic_v1 import Field, SecretStr, root_validator
+from langchain_core.runnables.config import ensure_config, run_in_executor
 from langchain_core.utils import (
     convert_to_secret_str,
     get_from_dict_or_env,
@@ -62,9 +74,15 @@ from langchain_core.utils.function_calling import (
     convert_to_openai_function,
     convert_to_openai_tool,
 )
+from langchain_core.utils.json import parse_partial_json
 from langchain_core.utils.utils import build_extra_kwargs
 
-from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk
+from langchain_zhipuai.chat_models.all_tools_message import ALLToolsMessageChunk, _paser_chunk
+
+if TYPE_CHECKING:
+    from langchain_core.pydantic_v1 import BaseModel
+    from langchain_core.runnables import Runnable, RunnableConfig
+    from langchain_core.tools import BaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +174,7 @@ def _convert_message_to_dict(message: BaseMessage) -> dict:
 
 
 def _convert_delta_to_message_chunk(
-    _dict: Mapping[str, Any], default_class: Type[BaseMessageChunk]
+        _dict: Mapping[str, Any], default_class: Type[BaseMessageChunk]
 ) -> BaseMessageChunk:
     role = cast(str, _dict.get("role"))
     content = cast(str, _dict.get("content") or "")
@@ -440,12 +458,180 @@ class ChatZhipuAI(BaseChatModel):
             combined["system_fingerprint"] = system_fingerprint
         return combined
 
+    def stream(
+            self,
+            input: LanguageModelInput,
+            config: Optional[RunnableConfig] = None,
+            *,
+            stop: Optional[List[str]] = None,
+            **kwargs: Any,
+    ) -> Iterator[BaseMessageChunk]:
+        if type(self)._stream == BaseChatModel._stream:
+            # model doesn't implement streaming, so use default implementation
+            yield cast(
+                BaseMessageChunk, self.invoke(input, config=config, stop=stop, **kwargs)
+            )
+        else:
+            config = ensure_config(config)
+            messages = self._convert_input(input).to_messages()
+            params = self._get_invocation_params(stop=stop, **kwargs)
+            options = {"stop": stop, **kwargs}
+            callback_manager = CallbackManager.configure(
+                config.get("callbacks"),
+                self.callbacks,
+                self.verbose,
+                config.get("tags"),
+                self.tags,
+                config.get("metadata"),
+                self.metadata,
+            )
+            (run_manager,) = callback_manager.on_chat_model_start(
+                dumpd(self),
+                [messages],
+                invocation_params=params,
+                options=options,
+                name=config.get("run_name"),
+                run_id=config.pop("run_id", None),
+                batch_size=1,
+            )
+            generation: Optional[ChatGenerationChunk] = None
+            try:
+                for chunk in self._stream(messages, stop=stop, **kwargs):
+                    if chunk.message.id is None:
+                        chunk.message.id = f"run-{run_manager.run_id}"
+                    chunk.message.response_metadata = _gen_info_and_msg_metadata(chunk)
+                    if isinstance(chunk.message, ALLToolsMessageChunk) and chunk.message.content != "":
+                        tool_calls, invalid_tool_calls = _paser_chunk(chunk.message.tool_call_chunks)
+
+                        for chunk_tool in invalid_tool_calls:
+                            if isinstance(chunk_tool["args"], str):
+                                args_ = parse_partial_json(chunk_tool["args"])
+                            else:
+                                args_ = chunk_tool["args"]
+                            if not isinstance(args_, dict):
+                                raise ValueError("Malformed args.")
+                            if "input" in args_:
+
+                                run_manager.on_llm_new_token(
+                                    cast(str, args_), chunk=chunk
+                                )
+
+                    else:
+                        run_manager.on_llm_new_token(
+                            cast(str, chunk.message.content), chunk=chunk
+                        )
+                    yield chunk.message
+                    if generation is None:
+                        generation = chunk
+                    else:
+                        generation += chunk
+                assert generation is not None
+            except BaseException as e:
+                run_manager.on_llm_error(
+                    e,
+                    response=LLMResult(
+                        generations=[[generation]] if generation else []
+                    ),
+                )
+                raise e
+            else:
+                run_manager.on_llm_end(LLMResult(generations=[[generation]]))
+
+    async def astream(
+            self,
+            input: LanguageModelInput,
+            config: Optional[RunnableConfig] = None,
+            *,
+            stop: Optional[List[str]] = None,
+            **kwargs: Any,
+    ) -> AsyncIterator[BaseMessageChunk]:
+        if (
+                type(self)._astream is BaseChatModel._astream
+                and type(self)._stream is BaseChatModel._stream
+        ):
+            # No async or sync stream is implemented, so fall back to ainvoke
+            yield cast(
+                BaseMessageChunk,
+                await self.ainvoke(input, config=config, stop=stop, **kwargs),
+            )
+            return
+
+        config = ensure_config(config)
+        messages = self._convert_input(input).to_messages()
+        params = self._get_invocation_params(stop=stop, **kwargs)
+        options = {"stop": stop, **kwargs}
+        callback_manager = AsyncCallbackManager.configure(
+            config.get("callbacks"),
+            self.callbacks,
+            self.verbose,
+            config.get("tags"),
+            self.tags,
+            config.get("metadata"),
+            self.metadata,
+        )
+        (run_manager,) = await callback_manager.on_chat_model_start(
+            dumpd(self),
+            [messages],
+            invocation_params=params,
+            options=options,
+            name=config.get("run_name"),
+            run_id=config.pop("run_id", None),
+            batch_size=1,
+        )
+
+        generation: Optional[ChatGenerationChunk] = None
+        try:
+            async for chunk in self._astream(
+                    messages,
+                    stop=stop,
+                    **kwargs,
+            ):
+                if chunk.message.id is None:
+                    chunk.message.id = f"run-{run_manager.run_id}"
+                chunk.message.response_metadata = _gen_info_and_msg_metadata(chunk)
+                if isinstance(chunk.message, ALLToolsMessageChunk) and chunk.message.content != "":
+                    tool_calls, invalid_tool_calls = _paser_chunk(chunk.message.tool_call_chunks)
+
+                    for chunk_tool in invalid_tool_calls:
+                        if isinstance(chunk_tool["args"], str):
+                            args_ = parse_partial_json(chunk_tool["args"])
+                        else:
+                            args_ = chunk_tool["args"]
+                        if not isinstance(args_, dict):
+                            raise ValueError("Malformed args.")
+                        if "input" in args_:
+
+                            await run_manager.on_llm_new_token(
+                                cast(str, args_), chunk=chunk
+                            )
+
+                else:
+                    await run_manager.on_llm_new_token(
+                        cast(str, chunk.message.content), chunk=chunk
+                    )
+                yield chunk.message
+                if generation is None:
+                    generation = chunk
+                else:
+                    generation += chunk
+            assert generation is not None
+        except BaseException as e:
+            await run_manager.on_llm_error(
+                e,
+                response=LLMResult(generations=[[generation]] if generation else []),
+            )
+            raise e
+        else:
+            await run_manager.on_llm_end(
+                LLMResult(generations=[[generation]]),
+            )
+
     def _stream(
-        self,
-        messages: List[BaseMessage],
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
-        **kwargs: Any,
+            self,
+            messages: List[BaseMessage],
+            stop: Optional[List[str]] = None,
+            run_manager: Optional[CallbackManagerForLLMRun] = None,
+            **kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
         message_dicts, params = self._create_message_dicts(messages, stop)
         params = {**params, **kwargs, "stream": True}
@@ -483,12 +669,12 @@ class ChatZhipuAI(BaseChatModel):
             yield chunk
 
     def _generate(
-        self,
-        messages: List[BaseMessage],
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
-        stream: Optional[bool] = None,
-        **kwargs: Any,
+            self,
+            messages: List[BaseMessage],
+            stop: Optional[List[str]] = None,
+            run_manager: Optional[CallbackManagerForLLMRun] = None,
+            stream: Optional[bool] = None,
+            **kwargs: Any,
     ) -> ChatResult:
         should_stream = stream if stream is not None else self.streaming
         if should_stream:
@@ -506,7 +692,7 @@ class ChatZhipuAI(BaseChatModel):
         return self._create_chat_result(response)
 
     def _create_message_dicts(
-        self, messages: List[BaseMessage], stop: Optional[List[str]]
+            self, messages: List[BaseMessage], stop: Optional[List[str]]
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
         params = self._default_params
         if stop is not None:
@@ -544,7 +730,7 @@ class ChatZhipuAI(BaseChatModel):
         return {"model_name": self.model_name, **self._default_params}
 
     def _get_invocation_params(
-        self, stop: Optional[List[str]] = None, **kwargs: Any
+            self, stop: Optional[List[str]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
         """Get the parameters used to invoke the model."""
         return {
@@ -560,12 +746,12 @@ class ChatZhipuAI(BaseChatModel):
         return "zhipuai-chat"
 
     def bind_functions(
-        self,
-        functions: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]],
-        function_call: Optional[
-            Union[_FunctionCall, str, Literal["auto", "none"]]
-        ] = None,
-        **kwargs: Any,
+            self,
+            functions: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]],
+            function_call: Optional[
+                Union[_FunctionCall, str, Literal["auto", "none"]]
+            ] = None,
+            **kwargs: Any,
     ) -> Runnable[LanguageModelInput, BaseMessage]:
         """Bind functions (and other objects) to this chat model.
 
@@ -593,7 +779,7 @@ class ChatZhipuAI(BaseChatModel):
             function_call = (
                 {"name": function_call}
                 if isinstance(function_call, str)
-                and function_call not in ("auto", "none")
+                   and function_call not in ("auto", "none")
                 else function_call
             )
             if isinstance(function_call, dict) and len(formatted_functions) != 1:
@@ -602,8 +788,8 @@ class ChatZhipuAI(BaseChatModel):
                     "function."
                 )
             if (
-                isinstance(function_call, dict)
-                and formatted_functions[0]["name"] != function_call["name"]
+                    isinstance(function_call, dict)
+                    and formatted_functions[0]["name"] != function_call["name"]
             ):
                 raise ValueError(
                     f"Function call {function_call} was specified, but the only "
@@ -616,11 +802,11 @@ class ChatZhipuAI(BaseChatModel):
         )
 
     def bind_tools(
-        self,
-        tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]],
-        *,
-        tool_choice: Optional[Union[dict, str, Literal["auto", "none"]]] = None,
-        **kwargs: Any,
+            self,
+            tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]],
+            *,
+            tool_choice: Optional[Union[dict, str, Literal["auto", "none"]]] = None,
+            **kwargs: Any,
     ) -> Runnable[LanguageModelInput, BaseMessage]:
         """Bind tool-like objects to this chat model.
 
@@ -650,8 +836,8 @@ class ChatZhipuAI(BaseChatModel):
                     f"tool. Received {len(formatted_tools)} tools."
                 )
             if isinstance(tool_choice, dict) and (
-                formatted_tools[0]["function"]["name"]
-                != tool_choice["function"]["name"]
+                    formatted_tools[0]["function"]["name"]
+                    != tool_choice["function"]["name"]
             ):
                 raise ValueError(
                     f"Tool choice {tool_choice} was specified, but the only "
@@ -659,3 +845,12 @@ class ChatZhipuAI(BaseChatModel):
                 )
             kwargs["tool_choice"] = tool_choice
         return super().bind(tools=formatted_tools, **kwargs)
+
+
+def _gen_info_and_msg_metadata(
+        generation: Union[ChatGeneration, ChatGenerationChunk],
+) -> dict:
+    return {
+        **(generation.generation_info or {}),
+        **generation.message.response_metadata,
+    }

@@ -1,15 +1,15 @@
 import json
 import logging
+from collections import deque
 from json import JSONDecodeError
 from typing import Any, Dict, List, Optional, Union
 
-from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
 from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
-    ToolCall,
+    ToolCall, ToolCallChunk,
 )
 from langchain_core.utils.json import (
     parse_partial_json,
@@ -31,6 +31,7 @@ from langchain_zhipuai.agents.output_parsers.drawing_tool import (
     _best_effort_parse_drawing_tool_tool_calls,
     _paser_drawing_tool_chunk_input,
 )
+from langchain_zhipuai.agents.output_parsers.funcation import _paser_function_chunk_input
 from langchain_zhipuai.agents.output_parsers.web_browser import (
     _best_effort_parse_web_browser_tool_calls,
     _paser_web_browser_chunk_input,
@@ -41,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 
 def parse_ai_message_to_tool_action(
-    message: BaseMessage,
+        message: BaseMessage,
 ) -> Union[List[AgentAction], AgentFinish]:
     """Parse an AI message potentially containing tool_calls."""
     if not isinstance(message, AIMessage):
@@ -90,6 +91,10 @@ def parse_ai_message_to_tool_action(
                     )
                 )
 
+    code_interpreter_action_result_stack: deque = deque()
+    web_browser_action_result_stack: deque = deque()
+    drawing_tool_result_stack: deque = deque()
+    function_tool_result_stack: deque = deque()
     code_interpreter_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
     ] = []
@@ -104,9 +109,7 @@ def parse_ai_message_to_tool_action(
         )
 
     if code_interpreter_chunk and len(code_interpreter_chunk) > 1:
-        actions.append(
-            _paser_code_interpreter_chunk_input(message, code_interpreter_chunk)
-        )
+        code_interpreter_action_result_stack = _paser_code_interpreter_chunk_input(message, code_interpreter_chunk)
 
     drawing_tool_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -120,7 +123,7 @@ def parse_ai_message_to_tool_action(
         drawing_tool_chunk = _best_effort_parse_drawing_tool_tool_calls(tool_calls)
 
     if drawing_tool_chunk and len(drawing_tool_chunk) > 1:
-        actions.append(_paser_drawing_tool_chunk_input(message, drawing_tool_chunk))
+        drawing_tool_result_stack = _paser_drawing_tool_chunk_input(message, drawing_tool_chunk)
 
     web_browser_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -134,40 +137,26 @@ def parse_ai_message_to_tool_action(
         web_browser_chunk = _best_effort_parse_web_browser_tool_calls(tool_calls)
 
     if web_browser_chunk and len(web_browser_chunk) > 1:
-        actions.append(_paser_web_browser_chunk_input(message, web_browser_chunk))
+        web_browser_action_result_stack = _paser_web_browser_chunk_input(message, web_browser_chunk)
 
     # TODO: parse platform tools built-in @langchain_zhipuai
     # delete AdapterAllToolStructType from tool_calls
-    tool_calls = [
+    function_tool_calls = [
         tool_call
         for tool_call in tool_calls
         if tool_call["name"] not in AdapterAllToolStructType.__members__.values()
     ]
 
-    for tool_call in tool_calls:
-        # HACK HACK HACK:
-        # The code that encodes tool input into Open AI uses a special variable
-        # name called `__arg1` to handle old style tools that do not expose a
-        # schema and expect a single string argument as an input.
-        # We unpack the argument here if it exists.
-        # Open AI does not support passing in a JSON array as an argument.
-        function_name = tool_call["name"]
-        _tool_input = tool_call["args"]
-        if "__arg1" in _tool_input:
-            tool_input = _tool_input["__arg1"]
-        else:
-            tool_input = _tool_input
+    function_tool_result_stack = _paser_function_chunk_input(message, function_tool_calls)
 
-        content_msg = f"responded: {message.content}\n" if message.content else "\n"
-        log = f"\nInvoking: `{function_name}` with `{tool_input}`\n{content_msg}\n"
+    for too_call in tool_calls:
+        if 'function' == too_call["name"]:
+            actions.append(function_tool_result_stack.popleft())
+        elif too_call["name"] == AdapterAllToolStructType.CODE_INTERPRETER:
+            actions.append(code_interpreter_action_result_stack.popleft())
+        elif too_call["name"] == AdapterAllToolStructType.WEB_BROWSER:
+            actions.append(web_browser_action_result_stack.popleft())
+        elif too_call["name"] == AdapterAllToolStructType.DRAWING_TOOL:
+            actions.append(drawing_tool_result_stack.popleft())
 
-        actions.append(
-            ToolAgentAction(
-                tool=function_name,
-                tool_input=tool_input,
-                log=log,
-                message_log=[message],
-                tool_call_id=tool_call["id"] if tool_call["id"] else "abc",
-            )
-        )
     return actions

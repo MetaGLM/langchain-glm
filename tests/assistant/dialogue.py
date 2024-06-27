@@ -285,7 +285,7 @@ def dialogue_page(client: ZhipuAIPluginsClient):
                     text += item.text
                     chat_box.update_msg(text, streaming=True, metadata=metadata)
                 elif item.status == AgentStatus.llm_end:
-                    chat_box.update_msg(item.text, streaming=False, state="complete")
+                    chat_box.update_msg(item.text, streaming=False, expanded=True, state="complete")
                 elif item.status == AgentStatus.chain_end:
                     chat_box.update_msg(
                         item.text,

@@ -1,6 +1,6 @@
 import json
 import logging
-from json import JSONDecodeError
+from collections import deque
 from typing import Any, Dict, List, Optional, Union
 
 from langchain.agents.output_parsers.tools import ToolAgentAction
@@ -19,6 +19,7 @@ from zhipuai.core import BaseModel
 from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
     AdapterAllToolStructType,
 )
+from langchain_zhipuai.agents.output_parsers._utils import concatenate_segments, find_object_positions
 from langchain_zhipuai.agents.output_parsers.base import (
     AllToolsMessageToolCall,
     AllToolsMessageToolCallChunk,
@@ -35,7 +36,7 @@ class CodeInterpreterAgentAction(ToolAgentAction):
 
 
 def _best_effort_parse_code_interpreter_tool_calls(
-    tool_call_chunks: List[dict],
+        tool_call_chunks: List[dict],
 ) -> List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]:
     code_interpreter_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -72,38 +73,50 @@ def _best_effort_parse_code_interpreter_tool_calls(
 
 
 def _paser_code_interpreter_chunk_input(
-    message: BaseMessage,
-    code_interpreter_chunk: List[
-        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
-    ],
-) -> CodeInterpreterAgentAction:
+        message: BaseMessage,
+        code_interpreter_chunk: List[
+            Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+        ],
+) -> deque[CodeInterpreterAgentAction]:
     try:
         input_log_chunk = []
 
-        outputs = []
+        outputs: List[List[dict]] = []
+        obj = object()
         for interpreter_chunk in code_interpreter_chunk:
             interpreter_chunk_args = interpreter_chunk.args
 
             if "input" in interpreter_chunk_args:
                 input_log_chunk.append(interpreter_chunk_args["input"])
             if "outputs" in interpreter_chunk_args:
-                outputs.extend(interpreter_chunk_args["outputs"])
+                input_log_chunk.append(obj)
+                outputs.append(interpreter_chunk_args["outputs"])
 
-        out_logs = [logs["logs"] for logs in outputs if "logs" in logs]
-        log = f"{''.join(input_log_chunk)}\n{''.join(out_logs)}\n"
-        tool_call_id = (
-            code_interpreter_chunk[0].id if code_interpreter_chunk[0].id else "abc"
-        )
-        code_interpreter_action = CodeInterpreterAgentAction(
-            tool=AdapterAllToolStructType.CODE_INTERPRETER,
-            tool_input="".join(input_log_chunk),
-            outputs=outputs,
-            log=log,
-            message_log=[message],
-            tool_call_id=tool_call_id,
-        )
+        # segments the list based on these positions, and then concatenates each segment into a string
+        # Find positions of object() instances
+        positions = find_object_positions(input_log_chunk, obj)
 
-        return code_interpreter_action
+        # Concatenate segments
+        result_actions = concatenate_segments(input_log_chunk, positions)
+
+        tool_call_id = code_interpreter_chunk[0].id if code_interpreter_chunk[0].id else "abc"
+        code_interpreter_action_result_stack: deque = deque()
+        for i, action in enumerate(result_actions):
+            out_logs = [logs["logs"] for logs in outputs[i] if "logs" in logs]
+            out_str = '\n'.join(out_logs)
+            log = f"{action}\r\n{out_str}"
+            code_interpreter_action = CodeInterpreterAgentAction(
+                tool=AdapterAllToolStructType.CODE_INTERPRETER,
+                tool_input=action,
+                outputs=outputs[i],
+                log=log,
+                message_log=[message],
+                tool_call_id=tool_call_id,
+            )
+
+            code_interpreter_action_result_stack.append(code_interpreter_action)
+        return code_interpreter_action_result_stack
+
     except Exception as e:
         logger.error(f"Error parsing code_interpreter_chunk: {e}", exc_info=True)
         raise OutputParserException(

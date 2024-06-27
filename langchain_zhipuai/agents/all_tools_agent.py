@@ -15,6 +15,7 @@ from typing import (
 )
 
 from langchain.agents.agent import Agent, AgentExecutor, AgentOutputParser
+from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain.agents.tools import InvalidTool
 from langchain.utilities.asyncio import asyncio_timeout
 from langchain_core.agents import AgentAction, AgentFinish, AgentStep
@@ -33,6 +34,7 @@ from langchain_zhipuai.agent_toolkits import AdapterAllTool
 from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
     AdapterAllToolStructType,
 )
+from langchain_zhipuai.agents.output_parsers.code_interpreter import CodeInterpreterAgentAction
 from langchain_zhipuai.agents.output_parsers.drawing_tool import DrawingToolAgentAction
 from langchain_zhipuai.agents.output_parsers.web_browser import WebBrowserAgentAction
 
@@ -123,29 +125,42 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
                         )
 
                     intermediate_steps.extend(next_step_output)
-                    if len(next_step_output) == 1:
+                    if len(next_step_output) >= 1:
                         # TODO: platform adapter status control, but langchain not output message info,
                         #   so where after paser instance object to let's DrawingToolAgentAction WebBrowserAgentAction
                         #   always output AgentFinish instance
-                        next_step_action = next_step_output[0]
-                        agent_action, observation = next_step_action
-                        if isinstance(agent_action, DrawingToolAgentAction):
-                            tool_return = AgentFinish(
-                                return_values={"output": str(observation)},
-                                log=str(observation),
-                            )
-                            return await self._areturn(
-                                tool_return, intermediate_steps, run_manager=run_manager
-                            )
-                        elif isinstance(agent_action, WebBrowserAgentAction):
-                            tool_return = AgentFinish(
-                                return_values={"output": str(observation)},
-                                log=str(observation),
-                            )
+                        continue_action = False
 
-                            return await self._areturn(
-                                tool_return, intermediate_steps, run_manager=run_manager
-                            )
+                        for next_step_action, observation in next_step_output:
+                            if next_step_action.tool not in [
+                                AdapterAllToolStructType.WEB_BROWSER,
+                                AdapterAllToolStructType.DRAWING_TOOL,
+                            ]:
+                                continue_action = True
+                                break
+
+                        if not continue_action:
+                            for next_step_action, observation in next_step_output:
+                                if isinstance(next_step_action, DrawingToolAgentAction):
+                                    tool_return = AgentFinish(
+                                        return_values={"output": str(observation)},
+                                        log=str(observation),
+                                    )
+                                    return await self._areturn(
+                                        tool_return,
+                                        intermediate_steps,
+                                        run_manager=run_manager,
+                                    )
+                                elif isinstance(next_step_action, WebBrowserAgentAction):
+                                    tool_return = AgentFinish(
+                                        return_values={"output": str(observation)},
+                                        log=str(observation),
+                                    )
+                                    return await self._areturn(
+                                        tool_return,
+                                        intermediate_steps,
+                                        run_manager=run_manager,
+                                    )
 
                     if len(next_step_output) == 1:
                         next_step_action = next_step_output[0]

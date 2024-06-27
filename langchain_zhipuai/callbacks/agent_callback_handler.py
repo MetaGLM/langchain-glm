@@ -63,7 +63,7 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
                 self.out = False
                 break
 
-        if token is not None and token != "" and self.out:
+        if token is not None and token != "" and not self.out:
             data = {
                 "run_id": str(kwargs["run_id"]),
                 "status": AgentStatus.llm_new_token,

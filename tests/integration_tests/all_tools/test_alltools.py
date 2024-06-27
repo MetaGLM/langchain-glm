@@ -23,6 +23,22 @@ from langchain_zhipuai.callbacks.agent_callback_handler import (
 
 
 @tool
+def calculate(text: str = Field(description="a math expression")) -> BaseToolOutput:
+    """
+    Useful to answer questions about simple calculations.
+    translate user question to a math expression that can be evaluated by numexpr.
+    """
+    import numexpr
+
+    try:
+        ret = str(numexpr.evaluate(text))
+    except Exception as e:
+        ret = f"wrong: {e}"
+
+    return BaseToolOutput(ret)
+
+
+@tool
 def shell(query: str = Field(description="The command to execute")):
     """Use Shell to execute system shell commands"""
     tool = ShellTool()
@@ -140,6 +156,37 @@ async def test_all_tools_web_browser(logging_conf):
         tools=[{"type": "web_browser"}],
     )
     chat_iterator = agent_executor.invoke(chat_input="帮我搜索今天的新闻")
+    async for item in chat_iterator:
+        if isinstance(item, AllToolsAction):
+            print("AllToolsAction:" + str(item.to_json()))
+
+        elif isinstance(item, AllToolsFinish):
+            print("AllToolsFinish:" + str(item.to_json()))
+
+        elif isinstance(item, AllToolsActionToolStart):
+            print("AllToolsActionToolStart:" + str(item.to_json()))
+
+        elif isinstance(item, AllToolsActionToolEnd):
+            print("AllToolsActionToolEnd:" + str(item.to_json()))
+        elif isinstance(item, AllToolsLLMStatus):
+            if item.status == AgentStatus.llm_end:
+                print("llm_end:" + item.text)
+
+
+@pytest.mark.asyncio
+async def test_all_tools_start(logging_conf):
+    logging.config.dictConfig(logging_conf)  # type: ignore
+
+    agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
+        model_name="glm-4-alltools",
+        tools=[
+            {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}},
+            {"type": "web_browser"},
+            {"type": "drawing_tool"},
+        ],
+    )
+    chat_iterator = agent_executor.invoke(chat_input="帮我查询2018年至2024年，每年五一假期全国旅游出行数据，并绘制成柱状图展示数据趋势。")
+
     async for item in chat_iterator:
         if isinstance(item, AllToolsAction):
             print("AllToolsAction:" + str(item.to_json()))
