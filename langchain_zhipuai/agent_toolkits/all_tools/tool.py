@@ -1,4 +1,4 @@
-"""Tool for interacting with a single API with natural language definition."""
+"""platform adapter tool """
 
 from __future__ import annotations
 

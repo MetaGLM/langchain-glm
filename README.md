@@ -9,6 +9,16 @@
 
 > 图｜GLM-4 All Tools 和定制 GLMs（智能体）的整体流程。
 
+## 项目结构
+
+| 包路径                                                       | 说明                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [agent_toolkits](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/agent_toolkits) | 平台工具AdapterAllTool适配器， 是一个用于为各种工具提供统一接口的平台适配器工具，目的是在不同平台上实现无缝集成和执行。该工具通过适配特定的平台参数，确保兼容性和一致的输出。 |
+| [agents](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/agents) | 定义AgentExecutor的输入、输出、智能体会话、工具参数、工具执行策略的封装 |
+| [callbacks](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/callbacks) | 抽象AgentExecutor过程中的一些交互事件，通过事件展示信息      |
+| [chat_models](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/chat_models) | zhipuai sdk的封装层，提供langchain的BaseChatModel集成，格式化输入输出为消息体 |
+| [embeddings](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/embeddings) | zhipuai sdk的封装层，提供langchain的Embeddings集成           |
+| [utils](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/utils) | 一些会话工具                                                 |
 
 
 ## 快速使用
