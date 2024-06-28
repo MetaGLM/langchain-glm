@@ -239,11 +239,17 @@ def _paser_chunk(tool_call_chunks):
                     )
             else:
                 args_ = parse_partial_json(chunk["args"])
+
                 if isinstance(args_, dict):
+                    temp_args_ = {}
+                    for key, value in args_.items():
+                        key = key.strip()
+                        temp_args_[key] = value
+
                     tool_calls.append(
                         ToolCall(
                             name=chunk["name"] or "",
-                            args=args_,
+                            args=temp_args_,
                             id=chunk["id"],
                         )
                     )

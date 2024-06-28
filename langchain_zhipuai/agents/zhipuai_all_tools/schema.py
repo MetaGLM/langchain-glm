@@ -2,6 +2,7 @@ import json
 import uuid
 from abc import abstractmethod
 from enum import Enum, auto
+from numbers import Number
 from typing import Any, Dict, List, Optional, Union
 
 from typing_extensions import Self
@@ -54,7 +55,7 @@ class AllToolsAction(AllToolsBaseComponent):
     run_id: str
     status: int  # AgentStatus
     tool: str
-    tool_input: Union[str, Dict[str, str]]
+    tool_input: Union[str, Dict[str, str], Dict[str, Number]]
     log: str
 
     @classmethod

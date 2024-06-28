@@ -23,26 +23,21 @@ from langchain_zhipuai.callbacks.agent_callback_handler import (
 
 
 @tool
-def calculate(text: str = Field(description="a math expression")) -> BaseToolOutput:
-    """
-    Useful to answer questions about simple calculations.
-    translate user question to a math expression that can be evaluated by numexpr.
-    """
-    import numexpr
-
-    try:
-        ret = str(numexpr.evaluate(text))
-    except Exception as e:
-        ret = f"wrong: {e}"
-
-    return BaseToolOutput(ret)
+def multiply(first_int: int, second_int: int) -> int:
+    """Multiply two integers together."""
+    return first_int * second_int
 
 
 @tool
-def shell(query: str = Field(description="The command to execute")):
-    """Use Shell to execute system shell commands"""
-    tool = ShellTool()
-    return BaseToolOutput(tool.run(tool_input=query))
+def add(first_int: int, second_int: int) -> int:
+    "Add two integers."
+    return first_int + second_int
+
+
+@tool
+def exp(exponent_num: int, base: int) -> int:
+    "Exponentiate the base to the exponent power."
+    return base ** exponent_num
 
 
 @pytest.mark.asyncio
@@ -51,10 +46,10 @@ async def test_all_tools_code_interpreter(logging_conf):
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
         model_name="glm-4-alltools",
-        tools=[shell],
+        tools=[multiply, exp, add],
     )
     chat_iterator = agent_executor.invoke(
-        chat_input="看下本地文件有哪些，告诉我你用的是什么文件,查看当前目录"
+        chat_input="计算下 2 乘以 5"
     )
     async for item in chat_iterator:
         if isinstance(item, AllToolsAction):
@@ -81,7 +76,7 @@ async def test_all_tools_code_interpreter_sandbox_none(logging_conf):
         model_name="glm-4-alltools",
         tools=[
             {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}},
-            shell,
+            multiply, exp, add,
         ],
     )
     chat_iterator = agent_executor.invoke(
@@ -185,7 +180,8 @@ async def test_all_tools_start(logging_conf):
             {"type": "drawing_tool"},
         ],
     )
-    chat_iterator = agent_executor.invoke(chat_input="帮我查询2018年至2024年，每年五一假期全国旅游出行数据，并绘制成柱状图展示数据趋势。")
+    chat_iterator = agent_executor.invoke(
+        chat_input="帮我查询2018年至2024年，每年五一假期全国旅游出行数据，并绘制成柱状图展示数据趋势。")
 
     async for item in chat_iterator:
         if isinstance(item, AllToolsAction):

@@ -26,84 +26,85 @@
 - 从 repo 安装
 https://github.com/MetaGLM/langchain-zhipuai/releases
 
-
 > 使用前请设置环境变量`ZHIPUAI_API_KEY`，值为智谱AI的API Key。
  
 
-- 代码解析使用示例
-
-### 1. 导入和设置
-这部分只是导入所有需要的库和模块，就像在开始修车之前先把所有工具拿出来一样。
-
+#### 工具使用
+- Set environment variables
 ```python
-import logging
-import logging.config
-import pytest
-from langchain.agents import tool
-from langchain.tools.shell import ShellTool
-from pydantic.v1 import BaseModel, Extra, Field
-from langchain_zhipuai.agent_toolkits import BaseToolOutput
-from langchain_zhipuai.agents.zhipuai_all_tools import ZhipuAIAllToolsRunnable
-from langchain_zhipuai.agents.zhipuai_all_tools.base import AllToolsAction, AllToolsActionToolEnd, AllToolsActionToolStart, AllToolsFinish, AllToolsLLMStatus
-from langchain_zhipuai.callbacks.agent_callback_handler import AgentStatus
+import getpass
+import os
+
+os.environ["ZHIPUAI_API_KEY"] = getpass.getpass()
 
 ```
-### 2. 日志配置
-这部分设置了日志记录。它配置了日志的去向（控制台和文件）、格式及其他细节，用来跟踪代码的运行情况和任何问题。
-
 ```python
-logging.config.dictConfig({
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "formatter": {
-            "format": "%(asctime)s %(name)-12s %(process)d %(levelname)-8s %(message)s"
-        }
-    },
-    "filters": {
-        "logger_name_filter": {"()": "zhipuai.core.logs.LoggerNameFilter"}
-    },
-    "handlers": {
-        "stream_handler": {
-            "class": "logging.StreamHandler",
-            "formatter": "formatter",
-            "level": "INFO"
-        },
-        "file_handler": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "formatter": "formatter",
-            "level": "INFO",
-            "filename": "logs/local_1719202815677/zhipuai.log",
-            "mode": "a",
-            "maxBytes": 3221225472,
-            "backupCount": 3221225472,
-            "encoding": "utf8"
-        }
-    },
-    "loggers": {
-        "langchain_zhipuai_core": {
-            "handlers": ["stream_handler", "file_handler"],
-            "level": "INFO",
-            "propagate": False
-        }
-    },
-    "root": {"level": "INFO", "handlers": ["stream_handler", "file_handler"]}
-})
-
+from langchain_zhipuai import ChatZhipuAI
+llm = ChatZhipuAI(model="glm-4")
 ```
-### 3. 定义一个Shell命令工具
-这个装饰器定义了一个工具，用于执行Shell命令。它使用ShellTool来运行命令并返回输出。
 
+
+- 定义一些示例工具：
 ```python
+from langchain_core.tools import tool
+
 @tool
-def shell(query: str = Field(description="要执行的命令")):
-    """使用Shell执行系统Shell命令"""
-    tool = ShellTool()
-    return BaseToolOutput(tool.run(tool_input=query))
+def multiply(first_int: int, second_int: int) -> int:
+    """Multiply two integers together."""
+    return first_int * second_int
 
+@tool
+def add(first_int: int, second_int: int) -> int:
+    "Add two integers."
+    return first_int + second_int
+
+@tool
+def exponentiate(base: int, exponent: int) -> int:
+    "Exponentiate the base to the exponent power."
+    return base**exponent
+```
+- 构建chain
+绑定工具到语言模型并调用：
+```python
+from operator import itemgetter
+from typing import Dict, List, Union
+
+from langchain_core.messages import AIMessage
+from langchain_core.runnables import (
+    Runnable,
+    RunnableLambda,
+    RunnableMap,
+    RunnablePassthrough,
+)
+
+tools = [multiply, exponentiate, add]
+llm_with_tools = llm.bind_tools(tools)
+tool_map = {tool.name: tool for tool in tools}
+
+
+def call_tools(msg: AIMessage) -> Runnable:
+    """Simple sequential tool calling helper."""
+    tool_map = {tool.name: tool for tool in tools}
+    tool_calls = msg.tool_calls.copy()
+    for tool_call in tool_calls:
+        tool_call["output"] = tool_map[tool_call["name"]].invoke(tool_call["args"])
+    return tool_calls
+
+
+chain = llm_with_tools | call_tools
 ```
 
-### 4. 创建一个代理执行器
+- 调用chain
+```python
+chain.invoke(
+    "What's 23 times 7, and what's five times 18 and add a million plus a billion and cube thirty-seven"
+)
+```
+
+#### 代码解析使用示例
+
+
+- 创建一个代理执行器
 我们的glm-4-alltools的模型提供了平台工具，通过ZhipuAIAllToolsRunnable，你可以非常方便的设置了一个执行器来运行多个工具。
  
 code_interpreter:使用`sandbox`指定代码沙盒环境，
@@ -114,26 +115,38 @@ web_browser:使用`web_browser`指定浏览器工具。
 drawing_tool:使用`drawing_tool`指定绘图工具。
 
 ```python
+
+from langchain_zhipuai.agents.zhipuai_all_tools import ZhipuAIAllToolsRunnable
 agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
     model_name="glm-4-alltools",
     tools=[
         {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}},
         {"type": "web_browser"},
         {"type": "drawing_tool"},
-        shell
+        multiply, exponentiate, add
     ],
 )
 
 ```
 
 
-### 5. 使用代理运行Shell命令并打印结果
+- 执行agent_executor并打印结果
 这部分使用代理来运行一个Shell命令，并在结果出现时打印出来。它检查结果的类型并打印相关信息。
 这个invoke返回一个异步迭代器，可以用来处理代理的输出。
 你可以多次调用invoke方法，每次调用都会返回一个新的迭代器。
 ZhipuAIAllToolsRunnable会自动处理状态保存和恢复，一些状态信息会被保存实例中
 你可以通过callback属性获取intermediate_steps的状态信息。
 ```python
+from langchain_zhipuai.agents.zhipuai_all_tools.base import (
+    AllToolsAction, 
+    AllToolsActionToolEnd,
+    AllToolsActionToolStart,
+    AllToolsFinish, 
+    AllToolsLLMStatus
+)
+from langchain_zhipuai.callbacks.agent_callback_handler import AgentStatus
+
+
 chat_iterator = agent_executor.invoke(
     chat_input="看下本地文件有哪些，告诉我你用的是什么文件,查看当前目录"
 )
