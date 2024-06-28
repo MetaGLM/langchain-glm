@@ -20,7 +20,10 @@ from zhipuai.core import BaseModel
 from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
     AdapterAllToolStructType,
 )
-from langchain_zhipuai.agents.output_parsers._utils import find_object_positions, concatenate_segments
+from langchain_zhipuai.agents.output_parsers._utils import (
+    concatenate_segments,
+    find_object_positions,
+)
 from langchain_zhipuai.agents.output_parsers.base import (
     AllToolsMessageToolCall,
     AllToolsMessageToolCallChunk,
@@ -37,7 +40,7 @@ class DrawingToolAgentAction(ToolAgentAction):
 
 
 def _best_effort_parse_drawing_tool_tool_calls(
-        tool_call_chunks: List[dict],
+    tool_call_chunks: List[dict],
 ) -> List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]:
     drawing_tool_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -74,10 +77,10 @@ def _best_effort_parse_drawing_tool_tool_calls(
 
 
 def _paser_drawing_tool_chunk_input(
-        message: BaseMessage,
-        drawing_tool_chunk: List[
-            Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
-        ],
+    message: BaseMessage,
+    drawing_tool_chunk: List[
+        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+    ],
 ) -> deque[DrawingToolAgentAction]:
     try:
         input_log_chunk = []
@@ -108,10 +111,13 @@ def _paser_drawing_tool_chunk_input(
             if len(result_actions) > len(outputs):
                 outputs.insert(i, [])
 
-            out_logs = [f'<img src="{logs.get("image")}" width="300">'
-                        for logs in outputs[i] if "image" in logs]
+            out_logs = [
+                f'<img src="{logs.get("image")}" width="300">'
+                for logs in outputs[i]
+                if "image" in logs
+            ]
 
-            out_str = '\n'.join(out_logs)
+            out_str = "\n".join(out_logs)
             log = f"{action}\r\n{out_str}"
 
             drawing_tool_action = DrawingToolAgentAction(

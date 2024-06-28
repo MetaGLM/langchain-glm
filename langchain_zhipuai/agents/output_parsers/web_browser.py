@@ -20,7 +20,10 @@ from zhipuai.core import BaseModel
 from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
     AdapterAllToolStructType,
 )
-from langchain_zhipuai.agents.output_parsers._utils import find_object_positions, concatenate_segments
+from langchain_zhipuai.agents.output_parsers._utils import (
+    concatenate_segments,
+    find_object_positions,
+)
 from langchain_zhipuai.agents.output_parsers.base import (
     AllToolsMessageToolCall,
     AllToolsMessageToolCallChunk,
@@ -37,7 +40,7 @@ class WebBrowserAgentAction(ToolAgentAction):
 
 
 def _best_effort_parse_web_browser_tool_calls(
-        tool_call_chunks: List[dict],
+    tool_call_chunks: List[dict],
 ) -> List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]:
     web_browser_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -74,10 +77,10 @@ def _best_effort_parse_web_browser_tool_calls(
 
 
 def _paser_web_browser_chunk_input(
-        message: BaseMessage,
-        web_browser_chunk: List[
-            Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
-        ],
+    message: BaseMessage,
+    web_browser_chunk: List[
+        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+    ],
 ) -> deque[WebBrowserAgentAction]:
     try:
         input_log_chunk = []
@@ -113,7 +116,7 @@ def _paser_web_browser_chunk_input(
                 for logs in outputs[i]
                 if "title" in logs
             ]
-            out_str = '\n'.join(out_logs)
+            out_str = "\n".join(out_logs)
             log = f"{action}\r\n{out_str}"
             web_browser_action = WebBrowserAgentAction(
                 tool=AdapterAllToolStructType.WEB_BROWSER,

@@ -14,12 +14,9 @@ from langchain_core.messages import (
 logger = logging.getLogger(__name__)
 
 
-
 def _paser_function_chunk_input(
-        message: BaseMessage,
-        function_chunk: List[
-            ToolCall
-        ],
+    message: BaseMessage,
+    function_chunk: List[ToolCall],
 ) -> deque[ToolAgentAction]:
     try:
         function_action_result_stack: deque = deque()
@@ -53,6 +50,5 @@ def _paser_function_chunk_input(
     except Exception as e:
         logger.error(f"Error parsing function_chunk: {e}", exc_info=True)
         raise OutputParserException(
-            f"Error parsing function_chunk: {e} "
-            f"the `arguments` is not valid JSON."
+            f"Error parsing function_chunk: {e} " f"the `arguments` is not valid JSON."
         )

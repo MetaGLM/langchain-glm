@@ -9,7 +9,8 @@ from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
-    ToolCall, ToolCallChunk,
+    ToolCall,
+    ToolCallChunk,
 )
 from langchain_core.utils.json import (
     parse_partial_json,
@@ -31,7 +32,9 @@ from langchain_zhipuai.agents.output_parsers.drawing_tool import (
     _best_effort_parse_drawing_tool_tool_calls,
     _paser_drawing_tool_chunk_input,
 )
-from langchain_zhipuai.agents.output_parsers.funcation import _paser_function_chunk_input
+from langchain_zhipuai.agents.output_parsers.funcation import (
+    _paser_function_chunk_input,
+)
 from langchain_zhipuai.agents.output_parsers.web_browser import (
     _best_effort_parse_web_browser_tool_calls,
     _paser_web_browser_chunk_input,
@@ -42,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 def parse_ai_message_to_tool_action(
-        message: BaseMessage,
+    message: BaseMessage,
 ) -> Union[List[AgentAction], AgentFinish]:
     """Parse an AI message potentially containing tool_calls."""
     if not isinstance(message, AIMessage):
@@ -109,7 +112,9 @@ def parse_ai_message_to_tool_action(
         )
 
     if code_interpreter_chunk and len(code_interpreter_chunk) > 1:
-        code_interpreter_action_result_stack = _paser_code_interpreter_chunk_input(message, code_interpreter_chunk)
+        code_interpreter_action_result_stack = _paser_code_interpreter_chunk_input(
+            message, code_interpreter_chunk
+        )
 
     drawing_tool_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -123,7 +128,9 @@ def parse_ai_message_to_tool_action(
         drawing_tool_chunk = _best_effort_parse_drawing_tool_tool_calls(tool_calls)
 
     if drawing_tool_chunk and len(drawing_tool_chunk) > 1:
-        drawing_tool_result_stack = _paser_drawing_tool_chunk_input(message, drawing_tool_chunk)
+        drawing_tool_result_stack = _paser_drawing_tool_chunk_input(
+            message, drawing_tool_chunk
+        )
 
     web_browser_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -137,7 +144,9 @@ def parse_ai_message_to_tool_action(
         web_browser_chunk = _best_effort_parse_web_browser_tool_calls(tool_calls)
 
     if web_browser_chunk and len(web_browser_chunk) > 1:
-        web_browser_action_result_stack = _paser_web_browser_chunk_input(message, web_browser_chunk)
+        web_browser_action_result_stack = _paser_web_browser_chunk_input(
+            message, web_browser_chunk
+        )
 
     # TODO: parse platform tools built-in @langchain_zhipuai
     # delete AdapterAllToolStructType from tool_calls
@@ -147,7 +156,9 @@ def parse_ai_message_to_tool_action(
         if tool_call["name"] not in AdapterAllToolStructType.__members__.values()
     ]
 
-    function_tool_result_stack = _paser_function_chunk_input(message, function_tool_calls)
+    function_tool_result_stack = _paser_function_chunk_input(
+        message, function_tool_calls
+    )
 
     if isinstance(message, ALLToolsMessageChunk):
         call_chunks = _paser_object_positions(message.tool_call_chunks)
@@ -162,9 +173,8 @@ def parse_ai_message_to_tool_action(
             else:
                 actions.append(function_tool_result_stack.popleft())
     else:
-
         for too_call in tool_calls:
-            if 'function' == too_call["name"]:
+            if "function" == too_call["name"]:
                 actions.append(function_tool_result_stack.popleft())
             elif too_call["name"] == AdapterAllToolStructType.CODE_INTERPRETER:
                 actions.append(code_interpreter_action_result_stack.popleft())
@@ -180,8 +190,7 @@ def _paser_object_positions(tool_call_chunks: List[ToolCallChunk]):
     call_chunks = []
     last_name = None
     for call_chunk in tool_call_chunks:
-        if call_chunk['name'] in AdapterAllToolStructType.__members__.values():
-
+        if call_chunk["name"] in AdapterAllToolStructType.__members__.values():
             if isinstance(call_chunk["args"], str):
                 args_ = parse_partial_json(call_chunk["args"])
             else:
@@ -190,17 +199,16 @@ def _paser_object_positions(tool_call_chunks: List[ToolCallChunk]):
                 raise ValueError("Malformed args.")
 
             if "outputs" in args_:
-
-                call_chunks.append(call_chunk['name'])
-                last_name = call_chunk['name']
+                call_chunks.append(call_chunk["name"])
+                last_name = call_chunk["name"]
 
         else:
-            if call_chunk['name'] != last_name:
-                call_chunks.append(call_chunk['name'])
-                last_name = call_chunk['name']
+            if call_chunk["name"] != last_name:
+                call_chunks.append(call_chunk["name"])
+                last_name = call_chunk["name"]
 
     if len(call_chunks) == 0:
-        call_chunks.append(tool_call_chunks[-1]['name'])
-    elif tool_call_chunks[-1]['name'] != call_chunks[-1]:
-        call_chunks.append(tool_call_chunks[-1]['name'])
+        call_chunks.append(tool_call_chunks[-1]["name"])
+    elif tool_call_chunks[-1]["name"] != call_chunks[-1]:
+        call_chunks.append(tool_call_chunks[-1]["name"])
     return call_chunks

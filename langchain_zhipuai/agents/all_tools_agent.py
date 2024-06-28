@@ -34,7 +34,9 @@ from langchain_zhipuai.agent_toolkits import AdapterAllTool
 from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
     AdapterAllToolStructType,
 )
-from langchain_zhipuai.agents.output_parsers.code_interpreter import CodeInterpreterAgentAction
+from langchain_zhipuai.agents.output_parsers.code_interpreter import (
+    CodeInterpreterAgentAction,
+)
 from langchain_zhipuai.agents.output_parsers.drawing_tool import DrawingToolAgentAction
 from langchain_zhipuai.agents.output_parsers.web_browser import WebBrowserAgentAction
 
@@ -154,7 +156,9 @@ class ZhipuAiAllToolsAgentExecutor(AgentExecutor):
                                         intermediate_steps,
                                         run_manager=run_manager,
                                     )
-                                elif isinstance(next_step_action, WebBrowserAgentAction):
+                                elif isinstance(
+                                    next_step_action, WebBrowserAgentAction
+                                ):
                                     tool_return = AgentFinish(
                                         return_values={"output": str(observation)},
                                         log=str(observation),

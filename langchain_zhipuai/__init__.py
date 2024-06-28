@@ -5,7 +5,6 @@ from importlib import metadata
 from langchain_zhipuai.agents import ZhipuAIAllToolsRunnable
 from langchain_zhipuai.chat_models import ChatZhipuAI
 
-
 try:
     __version__ = metadata.version(__package__)
 except metadata.PackageNotFoundError:

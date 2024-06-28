@@ -252,7 +252,7 @@ def dialogue_page(client: ZhipuAIPluginsClient):
 
                 chat_box.insert_msg(
                     Markdown(
-                        item.run_id+ "\n" + function_call[item.run_id] + "\n" + text,
+                        item.run_id + "\n" + function_call[item.run_id] + "\n" + text,
                         title=f"Function call {item.tool}.",
                         in_expander=True,
                         expanded=True,
@@ -292,7 +292,9 @@ def dialogue_page(client: ZhipuAIPluginsClient):
                     text += item.text
                     chat_box.update_msg(text, streaming=True, metadata=metadata)
                 elif item.status == AgentStatus.llm_end:
-                    chat_box.update_msg(item.text, streaming=False, expanded=True, state="complete")
+                    chat_box.update_msg(
+                        item.text, streaming=False, expanded=True, state="complete"
+                    )
                 elif item.status == AgentStatus.chain_end:
                     chat_box.update_msg(
                         item.text,

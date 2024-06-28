@@ -8,9 +8,9 @@ from langchain_core.runnables import (
     RunnableMap,
     RunnablePassthrough,
 )
-from langchain_zhipuai import ChatZhipuAI
-
 from langchain_core.tools import tool
+
+from langchain_zhipuai import ChatZhipuAI
 
 
 @tool
@@ -28,7 +28,7 @@ def add(first_int: int, second_int: int) -> int:
 @tool
 def exponentiate(base: int, exponent: int) -> int:
     "Exponentiate the base to the exponent power."
-    return base ** exponent
+    return base**exponent
 
 
 def test_tool_use():

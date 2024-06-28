@@ -37,7 +37,7 @@ def add(first_int: int, second_int: int) -> int:
 @tool
 def exp(exponent_num: int, base: int) -> int:
     "Exponentiate the base to the exponent power."
-    return base ** exponent_num
+    return base**exponent_num
 
 
 @pytest.mark.asyncio
@@ -48,9 +48,7 @@ async def test_all_tools_code_interpreter(logging_conf):
         model_name="glm-4-alltools",
         tools=[multiply, exp, add],
     )
-    chat_iterator = agent_executor.invoke(
-        chat_input="计算下 2 乘以 5"
-    )
+    chat_iterator = agent_executor.invoke(chat_input="计算下 2 乘以 5")
     async for item in chat_iterator:
         if isinstance(item, AllToolsAction):
             print("AllToolsAction:" + str(item.to_json()))
@@ -76,7 +74,9 @@ async def test_all_tools_code_interpreter_sandbox_none(logging_conf):
         model_name="glm-4-alltools",
         tools=[
             {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}},
-            multiply, exp, add,
+            multiply,
+            exp,
+            add,
         ],
     )
     chat_iterator = agent_executor.invoke(
@@ -181,7 +181,8 @@ async def test_all_tools_start(logging_conf):
         ],
     )
     chat_iterator = agent_executor.invoke(
-        chat_input="帮我查询2018年至2024年，每年五一假期全国旅游出行数据，并绘制成柱状图展示数据趋势。")
+        chat_input="帮我查询2018年至2024年，每年五一假期全国旅游出行数据，并绘制成柱状图展示数据趋势。"
+    )
 
     async for item in chat_iterator:
         if isinstance(item, AllToolsAction):

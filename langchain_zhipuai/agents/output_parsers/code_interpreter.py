@@ -19,7 +19,10 @@ from zhipuai.core import BaseModel
 from langchain_zhipuai.agent_toolkits.all_tools.struct_type import (
     AdapterAllToolStructType,
 )
-from langchain_zhipuai.agents.output_parsers._utils import concatenate_segments, find_object_positions
+from langchain_zhipuai.agents.output_parsers._utils import (
+    concatenate_segments,
+    find_object_positions,
+)
 from langchain_zhipuai.agents.output_parsers.base import (
     AllToolsMessageToolCall,
     AllToolsMessageToolCallChunk,
@@ -36,7 +39,7 @@ class CodeInterpreterAgentAction(ToolAgentAction):
 
 
 def _best_effort_parse_code_interpreter_tool_calls(
-        tool_call_chunks: List[dict],
+    tool_call_chunks: List[dict],
 ) -> List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]:
     code_interpreter_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -73,10 +76,10 @@ def _best_effort_parse_code_interpreter_tool_calls(
 
 
 def _paser_code_interpreter_chunk_input(
-        message: BaseMessage,
-        code_interpreter_chunk: List[
-            Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
-        ],
+    message: BaseMessage,
+    code_interpreter_chunk: List[
+        Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
+    ],
 ) -> deque[CodeInterpreterAgentAction]:
     try:
         input_log_chunk = []
@@ -101,14 +104,16 @@ def _paser_code_interpreter_chunk_input(
         # Concatenate segments
         result_actions = concatenate_segments(input_log_chunk, positions)
 
-        tool_call_id = code_interpreter_chunk[0].id if code_interpreter_chunk[0].id else "abc"
+        tool_call_id = (
+            code_interpreter_chunk[0].id if code_interpreter_chunk[0].id else "abc"
+        )
         code_interpreter_action_result_stack: deque = deque()
         for i, action in enumerate(result_actions):
             if len(result_actions) > len(outputs):
                 outputs.insert(i, [])
 
             out_logs = [logs["logs"] for logs in outputs[i] if "logs" in logs]
-            out_str = '\n'.join(out_logs)
+            out_str = "\n".join(out_logs)
             log = f"{action}\r\n{out_str}"
             code_interpreter_action = CodeInterpreterAgentAction(
                 tool=AdapterAllToolStructType.CODE_INTERPRETER,

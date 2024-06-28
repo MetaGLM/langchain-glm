@@ -29,8 +29,8 @@ def default_all_tool_chunk_parser(raw_tool_calls: List[dict]) -> List[ToolCallCh
             function_args = tool_call["function"]["arguments"]
             function_name = tool_call["function"]["name"]
         elif (
-                "code_interpreter" in tool_call
-                and tool_call["code_interpreter"] is not None
+            "code_interpreter" in tool_call
+            and tool_call["code_interpreter"] is not None
         ):
             function_args = json.dumps(
                 tool_call["code_interpreter"], ensure_ascii=False
@@ -83,9 +83,9 @@ class ALLToolsMessageChunk(AIMessage, BaseMessageChunk):
     def _backwards_compat_tool_calls(cls, values: dict) -> dict:
         raw_tool_calls = values.get("additional_kwargs", {}).get("tool_calls")
         tool_calls = (
-                values.get("tool_calls")
-                or values.get("invalid_tool_calls")
-                or values.get("tool_call_chunks")
+            values.get("tool_calls")
+            or values.get("invalid_tool_calls")
+            or values.get("tool_call_chunks")
         )
         if raw_tool_calls and not tool_calls:
             try:

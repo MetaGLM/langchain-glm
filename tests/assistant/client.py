@@ -225,7 +225,6 @@ class ZhipuAIPluginsClient:
                                 chunk_cache = ""
                                 yield data
                             except Exception as e:
-
                                 if chunk.startswith("data: "):
                                     chunk_cache += chunk[6:]
                                 elif chunk.startswith(":"):  # skip sse comment line
