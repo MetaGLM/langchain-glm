@@ -10,14 +10,14 @@ from streamlit_chatbox import *
 from streamlit_extras.bottom_container import bottom
 from zhipuai.core._base_models import construct_type
 
-from langchain_zhipuai.agents.zhipuai_all_tools.base import (
+from langchain_glm.agents.zhipuai_all_tools.base import (
     AllToolsAction,
     AllToolsActionToolEnd,
     AllToolsActionToolStart,
     AllToolsFinish,
     AllToolsLLMStatus,
 )
-from langchain_zhipuai.callbacks.agent_callback_handler import AgentStatus
+from langchain_glm.callbacks.agent_callback_handler import AgentStatus
 from tests.assistant.client import ZhipuAIPluginsClient
 from tests.assistant.utils import get_img_base64
 
@@ -292,10 +292,10 @@ def dialogue_page(client: ZhipuAIPluginsClient):
                     text += item.text
                     chat_box.update_msg(text, streaming=True, metadata=metadata)
                 elif item.status == AgentStatus.llm_end:
-                    chat_box.update_msg(text, streaming=False, expanded=False, state="complete")
-                    chat_box.insert_msg(
-                        item.text
+                    chat_box.update_msg(
+                        text, streaming=False, expanded=False, state="complete"
                     )
+                    chat_box.insert_msg(item.text)
                 elif item.status == AgentStatus.chain_end:
                     chat_box.update_msg(
                         item.text,

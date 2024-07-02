@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from langchain_zhipuai.agent_toolkits.all_tools.code_interpreter_tool import (
+from langchain_glm.agent_toolkits.all_tools.code_interpreter_tool import (
     CodeInterpreterAllToolExecutor,
 )
 

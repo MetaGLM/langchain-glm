@@ -16,9 +16,9 @@ from zhipuai.core.logs import (
     get_timestamp_ms,
 )
 
-from langchain_zhipuai.agent_toolkits import BaseToolOutput
-from langchain_zhipuai.agents.zhipuai_all_tools import ZhipuAIAllToolsRunnable
-from langchain_zhipuai.agents.zhipuai_all_tools.base import OutputType
+from langchain_glm.agent_toolkits import BaseToolOutput
+from langchain_glm.agents.zhipuai_all_tools import ZhipuAIAllToolsRunnable
+from langchain_glm.agents.zhipuai_all_tools.base import OutputType
 
 
 @tool

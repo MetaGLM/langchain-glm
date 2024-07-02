@@ -13,12 +13,12 @@
 
 | 包路径                                                       | 说明                                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| [agent_toolkits](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/agent_toolkits) | 平台工具AdapterAllTool适配器， 是一个用于为各种工具提供统一接口的平台适配器工具，目的是在不同平台上实现无缝集成和执行。该工具通过适配特定的平台参数，确保兼容性和一致的输出。 |
-| [agents](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/agents) | 定义AgentExecutor的输入、输出、智能体会话、工具参数、工具执行策略的封装 |
-| [callbacks](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/callbacks) | 抽象AgentExecutor过程中的一些交互事件，通过事件展示信息      |
-| [chat_models](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/chat_models) | zhipuai sdk的封装层，提供langchain的BaseChatModel集成，格式化输入输出为消息体 |
-| [embeddings](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/embeddings) | zhipuai sdk的封装层，提供langchain的Embeddings集成           |
-| [utils](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_zhipuai/utils) | 一些会话工具                                                 |
+| [agent_toolkits](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_glm/agent_toolkits) | 平台工具AdapterAllTool适配器， 是一个用于为各种工具提供统一接口的平台适配器工具，目的是在不同平台上实现无缝集成和执行。该工具通过适配特定的平台参数，确保兼容性和一致的输出。 |
+| [agents](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_glm/agents) | 定义AgentExecutor的输入、输出、智能体会话、工具参数、工具执行策略的封装 |
+| [callbacks](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_glm/callbacks) | 抽象AgentExecutor过程中的一些交互事件，通过事件展示信息      |
+| [chat_models](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_glm/chat_models) | zhipuai sdk的封装层，提供langchain的BaseChatModel集成，格式化输入输出为消息体 |
+| [embeddings](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_glm/embeddings) | zhipuai sdk的封装层，提供langchain的Embeddings集成           |
+| [utils](https://github.com/MetaGLM/langchain-zhipuai/tree/main/langchain_glm/utils) | 一些会话工具                                                 |
 
 
 ## 快速使用
@@ -39,7 +39,7 @@ os.environ["ZHIPUAI_API_KEY"] = getpass.getpass()
 
 ```
 ```python
-from langchain_zhipuai import ChatZhipuAI
+from langchain_glm import ChatZhipuAI
 llm = ChatZhipuAI(model="glm-4")
 ```
 
@@ -116,7 +116,7 @@ drawing_tool:使用`drawing_tool`指定绘图工具。
 
 ```python
 
-from langchain_zhipuai.agents.zhipuai_all_tools import ZhipuAIAllToolsRunnable
+from langchain_glm.agents.zhipuai_all_tools import ZhipuAIAllToolsRunnable
 agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
     model_name="glm-4-alltools",
     tools=[
@@ -137,14 +137,14 @@ agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
 ZhipuAIAllToolsRunnable会自动处理状态保存和恢复，一些状态信息会被保存实例中
 你可以通过callback属性获取intermediate_steps的状态信息。
 ```python
-from langchain_zhipuai.agents.zhipuai_all_tools.base import (
+from langchain_glm.agents.zhipuai_all_tools.base import (
     AllToolsAction, 
     AllToolsActionToolEnd,
     AllToolsActionToolStart,
     AllToolsFinish, 
     AllToolsLLMStatus
 )
-from langchain_zhipuai.callbacks.agent_callback_handler import AgentStatus
+from langchain_glm.callbacks.agent_callback_handler import AgentStatus
 
 
 chat_iterator = agent_executor.invoke(
@@ -195,4 +195,3 @@ python tests/assistant/start_chat.py
 
 
 https://github.com/MetaGLM/langchain-zhipuai/assets/16206043/06863f9c-cd03-4a74-b76a-daa315718104
- 

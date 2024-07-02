@@ -6,18 +6,18 @@ from langchain.agents import tool
 from langchain.tools.shell import ShellTool
 from pydantic.v1 import BaseModel, Extra, Field
 
-from langchain_zhipuai.agent_toolkits import BaseToolOutput
-from langchain_zhipuai.agents.zhipuai_all_tools import (
+from langchain_glm.agent_toolkits import BaseToolOutput
+from langchain_glm.agents.zhipuai_all_tools import (
     ZhipuAIAllToolsRunnable,
 )
-from langchain_zhipuai.agents.zhipuai_all_tools.base import (
+from langchain_glm.agents.zhipuai_all_tools.base import (
     AllToolsAction,
     AllToolsActionToolEnd,
     AllToolsActionToolStart,
     AllToolsFinish,
     AllToolsLLMStatus,
 )
-from langchain_zhipuai.callbacks.agent_callback_handler import (
+from langchain_glm.callbacks.agent_callback_handler import (
     AgentStatus,
 )
 
@@ -74,7 +74,7 @@ async def test_all_tools_code_interpreter(logging_conf):
         model_name="glm-4-alltools",
         tools=[
             {"type": "code_interpreter"},
-        ]
+        ],
     )
     chat_iterator = agent_executor.invoke(chat_input="计算下 2 乘以 5")
     async for item in chat_iterator:
@@ -100,9 +100,7 @@ async def test_all_tools_code_interpreter_sandbox_none(logging_conf):
 
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
         model_name="glm-4-alltools",
-        tools=[
-            {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}}
-        ],
+        tools=[{"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}}],
     )
     chat_iterator = agent_executor.invoke(
         chat_input="看下本地文件有哪些，告诉我你用的是什么文件,查看当前目录"

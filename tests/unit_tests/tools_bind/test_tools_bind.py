@@ -3,9 +3,9 @@ from langchain.tools.shell import ShellTool
 from langchain_core.runnables import RunnableBinding
 from pydantic.v1 import BaseModel, Extra, Field
 
-from langchain_zhipuai.agent_toolkits import BaseToolOutput
-from langchain_zhipuai.agents.zhipuai_all_tools.base import _get_assistants_tool
-from langchain_zhipuai.chat_models import ChatZhipuAI
+from langchain_glm.agent_toolkits import BaseToolOutput
+from langchain_glm.agents.zhipuai_all_tools.base import _get_assistants_tool
+from langchain_glm.chat_models import ChatZhipuAI
 
 
 class TestToolsBind:

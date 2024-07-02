@@ -1,16 +1,15 @@
-import numpy as np
-import pytest
-
-from langchain_zhipuai.embeddings.base import ZhipuAIEmbeddings
 import logging
 import logging.config
 
-import zhipuai
-from zhipuai import ZhipuAI
+import numpy as np
 import pytest
+import zhipuai
 from langchain.chains import LLMChain
 from langchain_core.prompts import PromptTemplate
-from langchain_zhipuai import ChatZhipuAI
+from zhipuai import ZhipuAI
+
+from langchain_glm import ChatZhipuAI
+from langchain_glm.embeddings.base import ZhipuAIEmbeddings
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +19,7 @@ def test_demo_1_completions(logging_conf):
     client = ZhipuAI()  # 填写您自己的APIKey
     response = client.chat.completions.create(
         model="glm-4-0520",
-        messages=[
-            {
-                "role": "user",
-                "content": "你好"
-            }
-        ],
+        messages=[{"role": "user", "content": "你好"}],
         top_p=0.7,
         temperature=0.1,
         max_tokens=2000,

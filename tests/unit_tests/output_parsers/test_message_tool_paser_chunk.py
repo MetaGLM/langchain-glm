@@ -1,4 +1,4 @@
-from langchain_zhipuai.chat_models.all_tools_message import (
+from langchain_glm.chat_models.all_tools_message import (
     _paser_chunk,
     default_all_tool_chunk_parser,
 )

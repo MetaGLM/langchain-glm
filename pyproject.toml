@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "langchain-zhipuai"
-version = "0.0.4"
+name = "langchain-glm"
+version = "0.0.1"
 description = ""
 authors = ["glide-the <2533736852@qq.com>"]
 readme = "README.md"
 packages = [
-    {include = "langchain_zhipuai"}
+    {include = "langchain_glm"}
 ]
 
 [tool.poetry.dependencies]

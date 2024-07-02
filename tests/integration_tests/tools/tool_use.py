@@ -10,7 +10,7 @@ from langchain_core.runnables import (
 )
 from langchain_core.tools import tool
 
-from langchain_zhipuai import ChatZhipuAI
+from langchain_glm import ChatZhipuAI
 
 
 @tool

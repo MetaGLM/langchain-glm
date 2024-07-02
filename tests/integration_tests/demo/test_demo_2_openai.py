@@ -1,5 +1,7 @@
 import logging
 import logging.config
+import os
+
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import (
     Runnable,
@@ -8,11 +10,12 @@ from langchain_core.runnables import (
     RunnablePassthrough,
 )
 from langchain_core.tools import tool
-import openai
-from openai import OpenAI
 from langchain_openai import ChatOpenAI
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
+
+os.environ["OPENAI_API_KEY"] = os.getenv("ZHIPUAI_API_KEY")
 
 
 def test_openai_demo_2_tools(logging_conf):
@@ -23,12 +26,7 @@ def test_openai_demo_2_tools(logging_conf):
     )
     response = client.chat.completions.create(
         model="glm-4-0520",
-        messages=[
-            {
-                "role": "user",
-                "content": "帮我查询天气"
-            }
-        ],
+        messages=[{"role": "user", "content": "帮我查询天气"}],
         tools=[
             {
                 "type": "function",
@@ -40,21 +38,16 @@ def test_openai_demo_2_tools(logging_conf):
                         "properties": {
                             "location": {
                                 "type": "string",
-                                "description": "The city and state, e.g. San Francisco, CA"
+                                "description": "The city and state, e.g. San Francisco, CA",
                             },
                             "unit": {
                                 "type": "string",
-                                "enum": [
-                                    "celsius",
-                                    "fahrenheit"
-                                ]
-                            }
+                                "enum": ["celsius", "fahrenheit"],
+                            },
                         },
-                        "required": [
-                            "location"
-                        ]
-                    }
-                }
+                        "required": ["location"],
+                    },
+                },
             }
         ],
         top_p=0.7,
@@ -79,14 +72,14 @@ def add(first_int: int, second_int: int) -> int:
 @tool
 def exponentiate(base: int, exponent: int) -> int:
     "Exponentiate the base to the exponent power."
-    return base ** exponent
+    return base**exponent
 
 
 def test_openai_demo1_tool_use():
     llm = ChatOpenAI(
         model="glm-4-0520",
         streaming=True,
-        openai_api_base="https://open.bigmodel.cn/api/paas/v4/"
+        openai_api_base="https://open.bigmodel.cn/api/paas/v4/",
     )
 
     tools = [multiply, exponentiate, add]

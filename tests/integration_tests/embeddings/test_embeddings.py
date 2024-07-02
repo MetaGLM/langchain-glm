@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from langchain_zhipuai.embeddings.base import ZhipuAIEmbeddings
+from langchain_glm.embeddings.base import ZhipuAIEmbeddings
 
 
 @pytest.mark.scheduled
