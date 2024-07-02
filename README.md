@@ -24,7 +24,11 @@
 ## 快速使用
 
 - 从 repo 安装
-https://github.com/MetaGLM/langchain-zhipuai/releases
+https://github.com/MetaGLM/langchain-glm/releases
+- 直接使用pip源码安装
+pip install git+https://github.com/MetaGLM/langchain-glm.git -v
+- 从pypi安装
+pip install langchain-glm
 
 > 使用前请设置环境变量`ZHIPUAI_API_KEY`，值为智谱AI的API Key。
  
