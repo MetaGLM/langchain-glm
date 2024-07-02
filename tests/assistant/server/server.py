@@ -67,7 +67,7 @@ async def chat(
         history=history,
         intermediate_steps=intermediate_steps,
         tools=[
-            {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}},
+            {"type": "code_interpreter"},
             {"type": "web_browser"},
             {"type": "drawing_tool"},
             calculate,

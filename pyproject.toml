@@ -49,6 +49,7 @@ streamlit-modal = "0.1.0"
 streamlit-aggrid = "1.0.5"
 streamlit-extras = "0.4.2"
 
+langchain-openai = { version = "^0.0.6", python = ">=3.8.1,<3.12,!=3.9.7" }
 
 [tool.poetry.group.lint]
 optional = true
