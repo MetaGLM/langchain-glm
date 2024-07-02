@@ -1,4 +1,4 @@
-#  <img height="30" width="30" src="docs/img/MetaGLM.png"> 🔗 LangChain-ZhipuAI
+#  <img height="30" width="30" src="docs/img/MetaGLM.png"> 🔗 LangChain-GLM
 
 
 ## 项目介绍
