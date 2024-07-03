@@ -2,11 +2,12 @@
 name = "langchain-glm"
 version = "0.0.1"
 description = ""
-authors = ["glide-the <2533736852@qq.com>"]
+authors = ["glide-the <z2533736852@gamil.com>"]
 readme = "README.md"
 packages = [
     {include = "langchain_glm"}
 ]
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<3.12,!=3.9.7"
