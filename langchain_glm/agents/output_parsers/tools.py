@@ -189,6 +189,8 @@ def parse_ai_message_to_tool_action(
 def _paser_object_positions(tool_call_chunks: List[ToolCallChunk]):
     call_chunks = []
     last_name = None
+    if not tool_call_chunks:
+        return call_chunks
     for call_chunk in tool_call_chunks:
         if call_chunk["name"] in AdapterAllToolStructType.__members__.values():
             if isinstance(call_chunk["args"], str):
