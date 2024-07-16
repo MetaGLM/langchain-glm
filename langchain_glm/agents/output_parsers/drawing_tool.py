@@ -81,7 +81,7 @@ def _paser_drawing_tool_chunk_input(
     drawing_tool_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
     ],
-) -> deque[DrawingToolAgentAction]:
+) -> Deque[DrawingToolAgentAction]:
     try:
         input_log_chunk = []
 
