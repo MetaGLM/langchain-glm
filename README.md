@@ -22,6 +22,8 @@
 
 
 ## 快速使用
+### Python版本支持
+正式的 Python (3.8, 3.9, 3.10, 3.11, 3.12)
 
 - 从 repo 安装
   https://github.com/MetaGLM/langchain-glm/releases
