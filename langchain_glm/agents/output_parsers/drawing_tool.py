@@ -2,7 +2,7 @@ import json
 import logging
 from collections import deque
 from json import JSONDecodeError
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Deque, Union
 
 from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
@@ -106,7 +106,7 @@ def _paser_drawing_tool_chunk_input(
         result_actions = concatenate_segments(input_log_chunk, positions)
 
         tool_call_id = drawing_tool_chunk[0].id if drawing_tool_chunk[0].id else "abc"
-        drawing_tool_action_result_stack: deque = deque()
+        drawing_tool_action_result_stack: Deque[DrawingToolAgentAction] = deque()
         for i, action in enumerate(result_actions):
             if len(result_actions) > len(outputs):
                 outputs.insert(i, [])

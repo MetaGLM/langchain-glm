@@ -2,7 +2,7 @@ import json
 import logging
 from collections import deque
 from json import JSONDecodeError
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Deque, Union
 
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
 from langchain_core.exceptions import OutputParserException

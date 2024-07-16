@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import deque
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Deque, Union
 
 from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 def _paser_function_chunk_input(
     message: BaseMessage,
     function_chunk: List[ToolCall],
-) -> deque[ToolAgentAction]:
+) -> Deque[ToolAgentAction]:
     try:
-        function_action_result_stack: deque = deque()
+        function_action_result_stack: Deque[ToolAgentAction] = deque()
         for tool_call in function_chunk:
             # HACK HACK HACK:
             # The code that encodes tool input into Open AI uses a special variable
