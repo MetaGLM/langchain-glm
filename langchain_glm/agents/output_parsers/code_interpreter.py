@@ -1,8 +1,8 @@
 import json
 import logging
-from collections import deque
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Deque, Union
 
+from collections import deque
 from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
 from langchain_core.exceptions import OutputParserException
@@ -27,7 +27,6 @@ from langchain_glm.agents.output_parsers.base import (
     AllToolsMessageToolCall,
     AllToolsMessageToolCallChunk,
 )
-from langchain_glm.chat_models.all_tools_message import ALLToolsMessageChunk
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +79,7 @@ def _paser_code_interpreter_chunk_input(
     code_interpreter_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
     ],
-) -> deque[CodeInterpreterAgentAction]:
+) -> Deque[CodeInterpreterAgentAction]:
     try:
         input_log_chunk = []
 
@@ -107,7 +106,7 @@ def _paser_code_interpreter_chunk_input(
         tool_call_id = (
             code_interpreter_chunk[0].id if code_interpreter_chunk[0].id else "abc"
         )
-        code_interpreter_action_result_stack: deque = deque()
+        code_interpreter_action_result_stack: Deque[CodeInterpreterAgentAction] = deque()
         for i, action in enumerate(result_actions):
             if len(result_actions) > len(outputs):
                 outputs.insert(i, [])
