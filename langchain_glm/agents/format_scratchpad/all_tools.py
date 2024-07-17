@@ -1,5 +1,5 @@
 import json
-from typing import List, Sequence, Tuple
+from typing import List, Sequence, Tuple, Union
 
 from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain_core.agents import AgentAction
@@ -25,7 +25,7 @@ from langchain_glm.agents.output_parsers.web_browser import WebBrowserAgentActio
 
 
 def _create_tool_message(
-        agent_action: ToolAgentAction, observation: BaseToolOutput
+        agent_action: ToolAgentAction, observation: Union[str, BaseToolOutput]
 ) -> ToolMessage:
     """Convert agent action and observation into a function message.
     Args:
@@ -74,7 +74,7 @@ def format_to_zhipuai_all_tool_messages(
                 elif "none" == observation.platform_params.get("sandbox", "auto"):
                     new_messages =  [
                         AIMessage(content=str(observation.code_input)),
-                        _create_tool_message(agent_action, observation)
+                        _create_tool_message(agent_action, observation.code_output)
                     ]
 
                     messages.extend([new for new in new_messages if new not in messages])

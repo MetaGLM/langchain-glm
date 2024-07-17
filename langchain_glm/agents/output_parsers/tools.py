@@ -164,7 +164,7 @@ def parse_ai_message_to_tool_action(
     )
 
     if isinstance(message, ALLToolsMessageChunk):
-        call_chunks = _paser_object_positions(tool_calls)
+        call_chunks = _paser_object_positions(message.tool_call_chunks)
 
         for too_call_name in call_chunks:
             if too_call_name == AdapterAllToolStructType.CODE_INTERPRETER:

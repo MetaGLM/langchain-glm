@@ -1,3 +1,4 @@
+import json
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
@@ -22,13 +23,13 @@ class CodeInterpreterToolOutput(BaseToolOutput):
     platform_params: Dict[str, Any]
     tool: str
     code_input: str
-    code_output: str
+    code_output: Dict[str, Any]
 
     def __init__(
         self,
         tool: str,
         code_input: str,
-        code_output: str,
+        code_output: Dict[str, Any],
         platform_params: Dict[str, Any],
         **extras: Any,
     ) -> None:
@@ -41,13 +42,13 @@ class CodeInterpreterToolOutput(BaseToolOutput):
         self.platform_params = platform_params
         self.tool = tool
         self.code_input = code_input
-        self.code_input = code_input
+        self.code_output = code_output
 
     @staticmethod
     def paser_data(
             tool: str,
             code_input: str,
-            code_output: str
+            code_output: Dict[str, Any]
     ) -> str:
         return f"""Access：{tool}, Message: {code_input},{code_output}"""
 
@@ -68,7 +69,10 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
 
             tool = PythonAstREPLTool()
             out = tool.run(tool_input=code_input)
-
+            if str(out) == "":
+                raise ValueError(
+                    f"Tool {tool.name} local sandbox is out empty"
+                )
             return CodeInterpreterToolOutput(
                 tool=tool.name,
                 code_input=code_input,
@@ -109,7 +113,7 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
         return CodeInterpreterToolOutput(
             tool=tool,
             code_input=tool_input,
-            code_output=log,
+            code_output=json.dumps(outputs),
             platform_params=self.platform_params,
         )
 
@@ -138,7 +142,7 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
         return CodeInterpreterToolOutput(
             tool=tool,
             code_input=tool_input,
-            code_output=log,
+            code_output=json.dumps(outputs),
             platform_params=self.platform_params,
         )
 
