@@ -15,21 +15,18 @@ env:
 jobs:
   build:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
 
     environment: Scheduled testing publish
     outputs:
       pkg-name: ${{ steps.check-version.outputs.pkg-name }}
       version: ${{ steps.check-version.outputs.version }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version:
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
-    name: "make integration_test #${{ matrix.python-version }}"
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+
+    name: "make integration_test #${{ matrix.os }} Python ${{ matrix.python-version }}"
     steps:
         - uses: actions/checkout@v4
 
