@@ -65,13 +65,15 @@ def format_to_zhipuai_all_tool_messages(
         if isinstance(agent_action, CodeInterpreterAgentAction):
             if isinstance(observation, CodeInterpreterToolOutput):
                 if "auto" == observation.platform_params.get("sandbox", "auto"):
-                    new_messages = list(AIMessage(content=str(observation.code_input))) + [
+                    new_messages = [
+                        AIMessage(content=str(observation.code_input)),
                         _create_tool_message(agent_action, observation)
                     ]
 
                     messages.extend([new for new in new_messages if new not in messages])
                 elif "none" == observation.platform_params.get("sandbox", "auto"):
-                    new_messages = list(AIMessage(content=str(observation.code_input))) + [
+                    new_messages =  [
+                        AIMessage(content=str(observation.code_input)),
                         _create_tool_message(agent_action, observation)
                     ]
 
@@ -85,7 +87,7 @@ def format_to_zhipuai_all_tool_messages(
 
         elif isinstance(agent_action, DrawingToolAgentAction):
             if isinstance(observation, DrawingToolOutput):
-                new_messages = list(AIMessage(content=str(observation)))
+                new_messages = [AIMessage(content=str(observation))]
                 messages.extend([new for new in new_messages if new not in messages])
             else:
                 raise ValueError(f"Unknown observation type: {type(observation)}")
@@ -93,22 +95,12 @@ def format_to_zhipuai_all_tool_messages(
         elif isinstance(agent_action, WebBrowserAgentAction):
             if isinstance(observation, WebBrowserToolOutput):
 
-                new_messages = list(AIMessage(content=str(observation)))
+                new_messages = [AIMessage(content=str(observation))]
                 messages.extend([new for new in new_messages if new not in messages])
             else:
                 raise ValueError(f"Unknown observation type: {type(observation)}")
 
         elif isinstance(agent_action, ToolAgentAction):
-
-            # tool_calls = paser_ai_message_to_tool_calls(agent_action.message_log[0])
-            # function_tool_calls = [
-            #     tool_call
-            #     for tool_call in tool_calls
-            #     if tool_call["name"] not in AdapterAllToolStructType.__members__.values()
-            # ]
-            # function_tool_result_stack = _paser_function_chunk_input(
-            #     agent_action.message_log[0], function_tool_calls
-            # )
 
             ai_msgs = AIMessage(
                 content=f"arguments='{agent_action.tool_input}', name='{agent_action.tool}'"

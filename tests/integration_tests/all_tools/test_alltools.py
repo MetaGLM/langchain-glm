@@ -163,6 +163,22 @@ async def test_all_tools_drawing_tool(logging_conf):
         elif isinstance(item, AllToolsLLMStatus):
             if item.status == AgentStatus.llm_end:
                 print("llm_end:" + item.text)
+    chat_iterator = agent_executor.invoke(chat_input="这只猫在喝奶")
+    async for item in chat_iterator:
+        if isinstance(item, AllToolsAction):
+            print("AllToolsAction:" + str(item.to_json()))
+
+        elif isinstance(item, AllToolsFinish):
+            print("AllToolsFinish:" + str(item.to_json()))
+
+        elif isinstance(item, AllToolsActionToolStart):
+            print("AllToolsActionToolStart:" + str(item.to_json()))
+
+        elif isinstance(item, AllToolsActionToolEnd):
+            print("AllToolsActionToolEnd:" + str(item.to_json()))
+        elif isinstance(item, AllToolsLLMStatus):
+            if item.status == AgentStatus.llm_end:
+                print("llm_end:" + item.text)
 
 
 @pytest.mark.asyncio
@@ -204,7 +220,7 @@ async def test_all_tools_start(logging_conf):
         ],
     )
     chat_iterator = agent_executor.invoke(
-        chat_input="帮我查询2018年至2024年，每年五一假期全国旅游出行数据，并绘制成柱状图展示数据趋势。"
+        chat_input="帮我查询2024年，五一假期全国旅游出行数据，并绘制成柱状图展示数据趋势。"
     )
 
     async for item in chat_iterator:
