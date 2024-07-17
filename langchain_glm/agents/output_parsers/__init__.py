@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Parsing utils to go from string to AgentAction or Agent Finish.
 
 AgentAction means that an action should be taken.

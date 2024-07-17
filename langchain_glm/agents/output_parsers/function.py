@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 import json
 import logging
 from collections import deque
-from typing import Any, Dict, List, Deque, Union
+from typing import Any, Deque, Dict, List, Union
 
 from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
@@ -13,14 +14,20 @@ from langchain_core.messages import (
 from langchain_core.utils.json import parse_partial_json
 
 from langchain_glm.agent_toolkits.all_tools.struct_type import AdapterAllToolStructType
-from langchain_glm.agents.output_parsers._utils import find_object_positions, concatenate_segments
-from langchain_glm.agents.output_parsers.base import AllToolsMessageToolCall, AllToolsMessageToolCallChunk
+from langchain_glm.agents.output_parsers._utils import (
+    concatenate_segments,
+    find_object_positions,
+)
+from langchain_glm.agents.output_parsers.base import (
+    AllToolsMessageToolCall,
+    AllToolsMessageToolCallChunk,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def _best_effort_parse_function_tool_calls(
-        tool_call_chunks: List[dict],
+    tool_call_chunks: List[dict],
 ) -> List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]]:
     function_chunk: List[
         Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
@@ -57,17 +64,13 @@ def _best_effort_parse_function_tool_calls(
 
 
 def _paser_function_chunk_input(
-        message: BaseMessage,
-        function_chunk: List[
-            Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]
-        ],
+    message: BaseMessage,
+    function_chunk: List[Union[AllToolsMessageToolCall, AllToolsMessageToolCallChunk]],
 ) -> Deque[ToolAgentAction]:
-
     try:
         function_action_result_stack: Deque[ToolAgentAction] = deque()
         for _chunk in function_chunk:
             if isinstance(_chunk, AllToolsMessageToolCall):
-
                 function_name = _chunk.name
                 _tool_input = _chunk.args
                 tool_call_id = _chunk.id if _chunk.id else "abc"
@@ -76,7 +79,9 @@ def _paser_function_chunk_input(
                 else:
                     tool_input = _tool_input
 
-                content_msg = f"responded: {message.content}\n" if message.content else "\n"
+                content_msg = (
+                    f"responded: {message.content}\n" if message.content else "\n"
+                )
                 log = f"\nInvoking: `{function_name}` with `{tool_input}`\n{content_msg}\n"
 
                 function_action_result_stack.append(
@@ -93,6 +98,4 @@ def _paser_function_chunk_input(
 
     except Exception as e:
         logger.error(f"Error parsing function_chunk: {e}", exc_info=True)
-        raise OutputParserException(
-            f"Error parsing function_chunk: {e} "
-        )
+        raise OutputParserException(f"Error parsing function_chunk: {e} ")

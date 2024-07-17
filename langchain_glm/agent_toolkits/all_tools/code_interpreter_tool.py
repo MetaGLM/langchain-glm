@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import logging
 from dataclasses import dataclass
@@ -34,9 +35,7 @@ class CodeInterpreterToolOutput(BaseToolOutput):
         **extras: Any,
     ) -> None:
         data = CodeInterpreterToolOutput.paser_data(
-            tool=tool,
-            code_input=code_input,
-            code_output=code_output
+            tool=tool, code_input=code_input, code_output=code_output
         )
         super().__init__(data, "", "", **extras)
         self.platform_params = platform_params
@@ -45,12 +44,9 @@ class CodeInterpreterToolOutput(BaseToolOutput):
         self.code_output = code_output
 
     @staticmethod
-    def paser_data(
-            tool: str,
-            code_input: str,
-            code_output: Dict[str, Any]
-    ) -> str:
+    def paser_data(tool: str, code_input: str, code_output: Dict[str, Any]) -> str:
         return f"""Access：{tool}, Message: {code_input},{code_output}"""
+
 
 @dataclass
 class CodeInterpreterAllToolExecutor(AllToolExecutor):
@@ -70,9 +66,7 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
             tool = PythonAstREPLTool()
             out = tool.run(tool_input=code_input)
             if str(out) == "":
-                raise ValueError(
-                    f"Tool {tool.name} local sandbox is out empty"
-                )
+                raise ValueError(f"Tool {tool.name} local sandbox is out empty")
             return CodeInterpreterToolOutput(
                 tool=tool.name,
                 code_input=code_input,

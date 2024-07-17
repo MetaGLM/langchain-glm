@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ruff: noqa: E402
 """Main entrypoint into package."""
 from importlib import metadata

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from typing import Dict, Type
 
 from langchain_glm.agent_toolkits import AdapterAllTool

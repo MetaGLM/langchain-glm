@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """IndexStructType class."""
 
 from enum import Enum

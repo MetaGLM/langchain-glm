@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 from typing import List, Sequence, Tuple, Union
 
@@ -25,7 +26,7 @@ from langchain_glm.agents.output_parsers.web_browser import WebBrowserAgentActio
 
 
 def _create_tool_message(
-        agent_action: ToolAgentAction, observation: Union[str, BaseToolOutput]
+    agent_action: ToolAgentAction, observation: Union[str, BaseToolOutput]
 ) -> ToolMessage:
     """Convert agent action and observation into a function message.
     Args:
@@ -49,7 +50,7 @@ def _create_tool_message(
 
 
 def format_to_zhipuai_all_tool_messages(
-        intermediate_steps: Sequence[Tuple[AgentAction, BaseToolOutput]],
+    intermediate_steps: Sequence[Tuple[AgentAction, BaseToolOutput]],
 ) -> List[BaseMessage]:
     """Convert (AgentAction, tool output) tuples into FunctionMessages.
 
@@ -67,17 +68,21 @@ def format_to_zhipuai_all_tool_messages(
                 if "auto" == observation.platform_params.get("sandbox", "auto"):
                     new_messages = [
                         AIMessage(content=str(observation.code_input)),
-                        _create_tool_message(agent_action, observation)
+                        _create_tool_message(agent_action, observation),
                     ]
 
-                    messages.extend([new for new in new_messages if new not in messages])
+                    messages.extend(
+                        [new for new in new_messages if new not in messages]
+                    )
                 elif "none" == observation.platform_params.get("sandbox", "auto"):
-                    new_messages =  [
+                    new_messages = [
                         AIMessage(content=str(observation.code_input)),
-                        _create_tool_message(agent_action, observation.code_output)
+                        _create_tool_message(agent_action, observation.code_output),
                     ]
 
-                    messages.extend([new for new in new_messages if new not in messages])
+                    messages.extend(
+                        [new for new in new_messages if new not in messages]
+                    )
                 else:
                     raise ValueError(
                         f"Unknown sandbox type: {observation.platform_params.get('sandbox', 'auto')}"
@@ -94,14 +99,12 @@ def format_to_zhipuai_all_tool_messages(
 
         elif isinstance(agent_action, WebBrowserAgentAction):
             if isinstance(observation, WebBrowserToolOutput):
-
                 new_messages = [AIMessage(content=str(observation))]
                 messages.extend([new for new in new_messages if new not in messages])
             else:
                 raise ValueError(f"Unknown observation type: {type(observation)}")
 
         elif isinstance(agent_action, ToolAgentAction):
-
             ai_msgs = AIMessage(
                 content=f"arguments='{agent_action.tool_input}', name='{agent_action.tool}'"
             )

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Configuration for unit tests."""
 import logging
 from importlib import util

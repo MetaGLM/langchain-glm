@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from langchain.agents import tool as register_tool
 from langchain.tools.shell import ShellTool
 from langchain_core.runnables import RunnableBinding

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 from typing import Any, Dict, List, Literal, Union
 
@@ -12,7 +13,8 @@ from langchain_core.messages.tool import (
     ToolCall,
     ToolCallChunk,
     default_tool_chunk_parser,
-    default_tool_parser, tool_call_chunk,
+    default_tool_parser,
+    tool_call_chunk,
 )
 from langchain_core.pydantic_v1 import root_validator
 from langchain_core.utils._merge import merge_dicts, merge_lists
@@ -103,7 +105,6 @@ class ALLToolsMessageChunk(AIMessage, BaseMessageChunk):
 
     @root_validator(allow_reuse=True)
     def init_tool_calls(cls, values: dict) -> dict:
-
         if not values["tool_call_chunks"]:
             if values["tool_calls"]:
                 values["tool_call_chunks"] = [
@@ -133,7 +134,6 @@ class ALLToolsMessageChunk(AIMessage, BaseMessageChunk):
         values["tool_calls"] = tool_calls
         values["invalid_tool_calls"] = invalid_tool_calls
         return values
-
 
     def __add__(self, other: Any) -> BaseMessageChunk:  # type: ignore
         if isinstance(other, ALLToolsMessageChunk):

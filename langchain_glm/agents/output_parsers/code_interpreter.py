@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 import json
 import logging
-from typing import Any, Dict, List, Deque, Union
-
 from collections import deque
+from typing import Any, Deque, Dict, List, Union
+
 from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
 from langchain_core.exceptions import OutputParserException
@@ -106,7 +107,9 @@ def _paser_code_interpreter_chunk_input(
         tool_call_id = (
             code_interpreter_chunk[0].id if code_interpreter_chunk[0].id else "abc"
         )
-        code_interpreter_action_result_stack: Deque[CodeInterpreterAgentAction] = deque()
+        code_interpreter_action_result_stack: Deque[
+            CodeInterpreterAgentAction
+        ] = deque()
         for i, action in enumerate(result_actions):
             if len(result_actions) > len(outputs):
                 outputs.insert(i, [])

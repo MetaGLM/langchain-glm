@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """**Callback handlers** allow listening to events in LangChain.
 
 **Class hierarchy:**

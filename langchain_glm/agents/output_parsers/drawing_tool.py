@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 import json
 import logging
 from collections import deque
 from json import JSONDecodeError
-from typing import Any, Dict, List, Deque, Union
+from typing import Any, Deque, Dict, List, Union
 
 from langchain.agents.output_parsers.tools import ToolAgentAction
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish

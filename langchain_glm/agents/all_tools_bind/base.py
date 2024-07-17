@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from typing import Sequence
 
 from langchain_core.language_models import BaseLanguageModel

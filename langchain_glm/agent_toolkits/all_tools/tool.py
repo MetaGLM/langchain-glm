@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """platform adapter tool """
 
 from __future__ import annotations

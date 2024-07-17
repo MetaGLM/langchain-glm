@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 import json
 import logging
 from collections import deque
 from json import JSONDecodeError
-from typing import Any, Dict, List, Deque, Union
+from typing import Any, Deque, Dict, List, Union
 
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
 from langchain_core.exceptions import OutputParserException
@@ -32,9 +33,10 @@ from langchain_glm.agents.output_parsers.drawing_tool import (
     _best_effort_parse_drawing_tool_tool_calls,
     _paser_drawing_tool_chunk_input,
 )
-
-from langchain_glm.agents.output_parsers.function import _best_effort_parse_function_tool_calls, \
-    _paser_function_chunk_input
+from langchain_glm.agents.output_parsers.function import (
+    _best_effort_parse_function_tool_calls,
+    _paser_function_chunk_input,
+)
 from langchain_glm.agents.output_parsers.web_browser import (
     _best_effort_parse_web_browser_tool_calls,
     _paser_web_browser_chunk_input,
@@ -44,7 +46,9 @@ from langchain_glm.chat_models.all_tools_message import ALLToolsMessageChunk
 logger = logging.getLogger(__name__)
 
 
-def paser_ai_message_to_tool_calls(message: BaseMessage, ):
+def paser_ai_message_to_tool_calls(
+    message: BaseMessage,
+):
     tool_calls = []
     if message.tool_calls:
         tool_calls = message.tool_calls
@@ -87,7 +91,7 @@ def paser_ai_message_to_tool_calls(message: BaseMessage, ):
 
 
 def parse_ai_message_to_tool_action(
-        message: BaseMessage,
+    message: BaseMessage,
 ) -> Union[List[AgentAction], AgentFinish]:
     """Parse an AI message potentially containing tool_calls."""
     if not isinstance(message, AIMessage):

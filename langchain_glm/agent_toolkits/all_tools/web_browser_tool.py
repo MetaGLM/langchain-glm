@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union

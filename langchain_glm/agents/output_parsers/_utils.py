@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Function to find positions of object() instances
 def find_object_positions(log_chunk, obj):
     return [i for i, x in enumerate(log_chunk) if x == obj]

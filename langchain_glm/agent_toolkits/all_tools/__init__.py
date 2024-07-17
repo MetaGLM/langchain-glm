@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from langchain_glm.agent_toolkits.all_tools.tool import (
     AdapterAllTool,
     BaseToolOutput,

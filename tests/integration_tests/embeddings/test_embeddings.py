@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Test zhipuai embeddings."""
 import numpy as np
 import pytest

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import uuid
 from abc import abstractmethod

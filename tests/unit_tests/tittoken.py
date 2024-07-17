@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 def test_tit():
     import tiktoken
 
