@@ -141,7 +141,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
     agent_executor: AgentExecutor
     """ZhipuAI AgentExecutor."""
 
-    model_name: str = Field(default="tob-alltools-api-dev")
+    model_name: str = Field(default="glm-4-alltools")
     """工具模型"""
     callback: AgentExecutorAsyncIteratorCallbackHandler
     """ZhipuAI AgentExecutor callback."""
@@ -193,7 +193,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
             streaming=True,
             verbose=True,
             callbacks=callbacks,
-            model_name=model_name,
+            model=model_name,
             temperature=temperature,
             **kwargs,
         )

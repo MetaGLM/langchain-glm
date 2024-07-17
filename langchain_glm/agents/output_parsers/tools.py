@@ -181,7 +181,7 @@ def parse_ai_message_to_tool_action(
                 actions.append(function_tool_result_stack.popleft())
     else:
         for too_call in tool_calls:
-            if "function" == too_call["name"]:
+            if too_call["name"] not in AdapterAllToolStructType.__members__.values():
                 actions.append(function_tool_result_stack.popleft())
             elif too_call["name"] == AdapterAllToolStructType.CODE_INTERPRETER:
                 actions.append(code_interpreter_action_result_stack.popleft())

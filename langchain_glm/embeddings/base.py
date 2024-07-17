@@ -22,6 +22,7 @@ from typing import (
 import zhipuai
 from langchain_core.embeddings import Embeddings
 from langchain_core.pydantic_v1 import (
+    BaseModel,
     Extra,
     Field,
     SecretStr,
@@ -32,8 +33,6 @@ from langchain_core.utils import (
     get_from_dict_or_env,
     get_pydantic_field_names,
 )
-from typing_extensions import ClassVar
-from zhipuai.core import PYDANTIC_V2, BaseModel, ConfigDict
 
 logger = logging.getLogger(__name__)
 
@@ -84,16 +83,14 @@ class ZhipuAIEmbeddings(BaseModel, Embeddings):
     http_client: Union[Any, None] = None
     """Optional httpx.Client."""
 
-    if PYDANTIC_V2:
-        model_config: ClassVar[ConfigDict] = ConfigDict(
-            extra="forbid", populate_by_name=True
-        )
-    else:
 
-        class Config:
-            allow_population_by_field_name = True
+    class Config:
+        """Configuration for this pydantic object."""
 
-    @root_validator(pre=True)
+        extra = Extra.forbid
+        allow_population_by_field_name = True
+
+    @root_validator(pre=True, allow_reuse=True)
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Build extra kwargs from additional params that were passed in."""
         all_required_field_names = get_pydantic_field_names(cls)
@@ -119,7 +116,7 @@ class ZhipuAIEmbeddings(BaseModel, Embeddings):
         values["model_kwargs"] = extra
         return values
 
-    @root_validator()
+    @root_validator(allow_reuse=True)
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key and python package exists in environment."""
         zhipuai_api_key = get_from_dict_or_env(
