@@ -131,7 +131,7 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
 
     async def on_tool_end(
         self,
-        output: str,
+        output: Any,
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
@@ -143,7 +143,7 @@ class AgentExecutorAsyncIteratorCallbackHandler(AsyncIteratorCallbackHandler):
             "run_id": str(run_id),
             "status": AgentStatus.tool_end,
             "tool": kwargs["name"],
-            "tool_output": output,
+            "tool_output": str(output),
         }
         self.queue.put_nowait(dumps(data))
 
