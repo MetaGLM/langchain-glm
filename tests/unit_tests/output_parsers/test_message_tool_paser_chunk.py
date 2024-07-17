@@ -38,7 +38,7 @@ def test_paser_web_browser_success_tool_calls():
                     {
                         "title": "昨夜今晨，京津冀发生这些大事（2024年6月27日） - 腾讯网",
                         "link": "https://new.qq.com/rain/a/20240627A013AI00",
-                        "content": "北京首套房首付比例最低2成. “517”楼市新政的“靴子”在北京落地了。. "
+                        "content": "北京首套房首付比例最低2成. “517”楼市新政的“靴子”在北京落地了。. ",
                     }
                 ]
             },

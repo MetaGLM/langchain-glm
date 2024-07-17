@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys
+
 import pytest
+
 from langchain_glm.agent_toolkits.all_tools.code_interpreter_tool import (
     CodeInterpreterAllToolExecutor,
 )
@@ -14,8 +16,8 @@ def test_python_ast_interpreter():
     )
     print(out.data)
     assert (
-            out.data
-            != """Access：code_interpreter,python_repl_ast, Message: print('Hello, World!')
+        out.data
+        != """Access：code_interpreter,python_repl_ast, Message: print('Hello, World!')
 Hello, World!
 """
     )

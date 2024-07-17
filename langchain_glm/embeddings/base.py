@@ -19,12 +19,9 @@ from typing import (
     cast,
 )
 
-import numpy as np
-import tiktoken
 import zhipuai
 from langchain_core.embeddings import Embeddings
 from langchain_core.pydantic_v1 import (
-    BaseModel,
     Extra,
     Field,
     SecretStr,
@@ -35,6 +32,8 @@ from langchain_core.utils import (
     get_from_dict_or_env,
     get_pydantic_field_names,
 )
+from typing_extensions import ClassVar
+from zhipuai.core import PYDANTIC_V2, BaseModel, ConfigDict
 
 logger = logging.getLogger(__name__)
 
@@ -85,11 +84,14 @@ class ZhipuAIEmbeddings(BaseModel, Embeddings):
     http_client: Union[Any, None] = None
     """Optional httpx.Client."""
 
-    class Config:
-        """Configuration for this pydantic object."""
+    if PYDANTIC_V2:
+        model_config: ClassVar[ConfigDict] = ConfigDict(
+            extra="forbid", populate_by_name=True
+        )
+    else:
 
-        extra = Extra.forbid
-        allow_population_by_field_name = True
+        class Config:
+            allow_population_by_field_name = True
 
     @root_validator(pre=True)
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:

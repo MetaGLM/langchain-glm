@@ -6,8 +6,8 @@ from enum import Enum, auto
 from numbers import Number
 from typing import Any, Dict, List, Optional, Union
 
-from typing_extensions import Self
-from zhipuai.core import BaseModel
+from typing_extensions import ClassVar, Self
+from zhipuai.core import PYDANTIC_V2, BaseModel, ConfigDict
 
 
 class MsgType:
@@ -18,8 +18,12 @@ class MsgType:
 
 
 class AllToolsBaseComponent(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
+    if PYDANTIC_V2:
+        model_config: ClassVar[ConfigDict] = ConfigDict(arbitrary_types_allowed=True)
+    else:
+
+        class Config:
+            arbitrary_types_allowed = True
 
     @classmethod
     @abstractmethod

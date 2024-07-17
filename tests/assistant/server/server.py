@@ -6,9 +6,9 @@ from typing import List, Tuple
 from fastapi import APIRouter, Body, FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.agents import tool
-from langchain.tools.shell import ShellTool
+from langchain_community.tools import ShellTool
 from langchain_core.agents import AgentAction
-from pydantic.v1 import BaseModel, Extra, Field
+from pydantic.v1 import Extra, Field
 from sse_starlette.sse import EventSourceResponse
 from uvicorn import Config, Server
 from zhipuai.core.logs import (

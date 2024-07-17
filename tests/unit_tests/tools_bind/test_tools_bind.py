@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from langchain.agents import tool as register_tool
-from langchain.tools.shell import ShellTool
+from langchain_community.tools import ShellTool
 from langchain_core.runnables import RunnableBinding
-from pydantic.v1 import BaseModel, Extra, Field
+from pydantic.v1 import Extra, Field
 
 from langchain_glm.agent_toolkits import BaseToolOutput
 from langchain_glm.agents.zhipuai_all_tools.base import _get_assistants_tool

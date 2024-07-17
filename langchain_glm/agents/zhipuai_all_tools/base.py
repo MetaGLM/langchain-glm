@@ -26,7 +26,9 @@ from langchain_core.runnables import RunnableConfig, RunnableSerializable
 from langchain_core.runnables.base import RunnableBindingBase
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
-from pydantic.v1 import BaseModel, Field, validator
+from pydantic.v1 import Field, validator
+from typing_extensions import ClassVar
+from zhipuai.core import PYDANTIC_V2, BaseModel, ConfigDict
 
 from langchain_glm.agent_toolkits.all_tools.registry import (
     TOOL_STRUCT_TYPE_TO_TOOL_CLASS,
@@ -143,8 +145,6 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
     """工具模型"""
     callback: AgentExecutorAsyncIteratorCallbackHandler
     """ZhipuAI AgentExecutor callback."""
-    check_every_ms: float = 1_000.0
-    """Frequency with which to check run progress in ms."""
     intermediate_steps: List[Tuple[AgentAction, BaseToolOutput]] = []
     """intermediate_steps to store the data to be processed."""
     history: List[Union[List, Tuple, Dict]] = []
@@ -153,9 +153,8 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
     class Config:
         arbitrary_types_allowed = True
 
-    @validator("intermediate_steps", pre=True, each_item=True, allow_reuse=True)
-    def check_intermediate_steps(cls, v):
-        return v
+    if PYDANTIC_V2:
+        model_config: ClassVar[ConfigDict] = ConfigDict(arbitrary_types_allowed=True)
 
     @staticmethod
     def paser_all_tools(

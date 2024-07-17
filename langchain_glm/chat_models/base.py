@@ -77,6 +77,8 @@ from langchain_core.utils.function_calling import (
 )
 from langchain_core.utils.json import parse_partial_json
 from langchain_core.utils.utils import build_extra_kwargs
+from typing_extensions import ClassVar
+from zhipuai.core import PYDANTIC_V2, ConfigDict
 
 from langchain_glm.chat_models.all_tools_message import (
     ALLToolsMessageChunk,
@@ -84,9 +86,9 @@ from langchain_glm.chat_models.all_tools_message import (
 )
 
 if TYPE_CHECKING:
-    from langchain_core.pydantic_v1 import BaseModel
     from langchain_core.runnables import Runnable, RunnableConfig
     from langchain_core.tools import BaseTool
+    from zhipuai.core import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -378,10 +380,12 @@ class ChatZhipuAI(BaseChatModel):
     http_client: Union[Any, None] = None
     """Optional httpx.Client."""
 
-    class Config:
-        """Configuration for this pydantic object."""
+    if PYDANTIC_V2:
+        model_config: ClassVar[ConfigDict] = ConfigDict(populate_by_name=True)
+    else:
 
-        allow_population_by_field_name = True
+        class Config:
+            allow_population_by_field_name = True
 
     @root_validator(pre=True, allow_reuse=True)
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:

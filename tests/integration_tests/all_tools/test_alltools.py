@@ -4,8 +4,6 @@ import logging.config
 
 import pytest
 from langchain.agents import tool
-from langchain.tools.shell import ShellTool
-from pydantic.v1 import BaseModel, Extra, Field
 
 from langchain_glm.agent_toolkits import BaseToolOutput
 from langchain_glm.agents.zhipuai_all_tools import (
