@@ -46,6 +46,7 @@ jobs:
         - name: Run integration tests
           shell: bash
           env:
+            PYTHONIOENCODING: "utf-8"
             ZHIPUAI_API_KEY: ${{ secrets.ZHIPUAI_API_KEY }}
             ZHIPUAI_BASE_URL: ${{ secrets.ZHIPUAI_BASE_URL }}
           run: |

@@ -157,12 +157,14 @@ jobs:
       - name: Run unit tests
         run: make tests
         env:
+          PYTHONIOENCODING: "utf-8"
           ZHIPUAI_API_KEY: ${{ secrets.ZHIPUAI_API_KEY }}
           ZHIPUAI_BASE_URL: ${{ secrets.ZHIPUAI_BASE_URL }}
         working-directory: ${{ inputs.working-directory }}
 
       - name: Run integration tests
         env:
+          PYTHONIOENCODING: "utf-8"
           ZHIPUAI_API_KEY: ${{ secrets.ZHIPUAI_API_KEY }}
           ZHIPUAI_BASE_URL: ${{ secrets.ZHIPUAI_BASE_URL }}
         run: make integration_tests
