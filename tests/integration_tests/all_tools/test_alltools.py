@@ -214,7 +214,7 @@ async def test_all_tools_start(logging_conf):
     agent_executor = ZhipuAIAllToolsRunnable.create_agent_executor(
         model_name="glm-4-alltools",
         tools=[
-            {"type": "code_interpreter", "code_interpreter": {"sandbox": "none"}},
+            {"type": "code_interpreter"},
             {"type": "web_browser"},
             {"type": "drawing_tool"},
         ],
