@@ -38,7 +38,7 @@ def test_paser_web_browser_success_tool_calls():
                     {
                         "title": "昨夜今晨，京津冀发生这些大事（2024年6月27日） - 腾讯网",
                         "link": "https://new.qq.com/rain/a/20240627A013AI00",
-                        "content": "网页1 天前 · 昨夜今晨，京津冀发生这些大事（2024年6月27日）. 北京首套房首付比例最低2成. “517”楼市新政的“靴子”在北京落地了。. 昨天，北京市住建委、中国人民银行北京市分行 …   ",
+                        "content": "北京首套房首付比例最低2成. “517”楼市新政的“靴子”在北京落地了。. "
                     }
                 ]
             },
@@ -50,7 +50,7 @@ def test_paser_web_browser_success_tool_calls():
     assert tool_call_chunks[0]["name"] == "web_browser"
     assert (
         tool_call_chunks[0]["args"]
-        == '{"outputs": [{"title": "昨夜今晨，京津冀发生这些大事（2024年6月27日） - 腾讯网", "link": "https://new.qq.com/rain/a/20240627A013AI00", "content": "网页1 天前\u2002·\u2002昨夜今晨，京津冀发生这些大事（2024年6月27日）. 北京首套房首付比例最低2成. “517”楼市新政的“靴子”在北京落地了。. 昨天，北京市住建委、中国人民银行北京市分行 … \xa0 "}]}'
+        == '{"outputs": [{"title": "昨夜今晨，京津冀发生这些大事（2024年6月27日） - 腾讯网", "link": "https://new.qq.com/rain/a/20240627A013AI00", "content": "北京首套房首付比例最低2成. “517”楼市新政的“靴子”在北京落地了。. "}]}'
     )
     paser, invalid_tool_calls = _paser_chunk(tool_call_chunks)
 
@@ -63,7 +63,7 @@ def test_paser_web_browser_success_tool_calls():
             {
                 "title": "昨夜今晨，京津冀发生这些大事（2024年6月27日） - 腾讯网",
                 "link": "https://new.qq.com/rain/a/20240627A013AI00",
-                "content": "网页1 天前\u2002·\u2002昨夜今晨，京津冀发生这些大事（2024年6月27日）. 北京首套房首付比例最低2成. “517”楼市新政的“靴子”在北京落地了。. 昨天，北京市住建委、中国人民银行北京市分行 … \xa0 ",
+                "content": "北京首套房首付比例最低2成. “517”楼市新政的“靴子”在北京落地了。. ",
             }
         ]
     }
