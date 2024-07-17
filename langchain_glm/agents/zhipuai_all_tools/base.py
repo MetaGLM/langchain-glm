@@ -307,7 +307,7 @@ class ZhipuAIAllToolsRunnable(RunnableSerializable[Dict, OutputType]):
                         run_id=data["run_id"],
                         status=data["status"],
                         tool=data["tool"],
-                        tool_output=data["tool_output"],
+                        tool_output=str(data["tool_output"]),
                     )
                 elif data["status"] == AgentStatus.agent_finish:
                     class_status = AllToolsFinish(

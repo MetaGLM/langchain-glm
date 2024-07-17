@@ -129,6 +129,5 @@ def _paser_code_interpreter_chunk_input(
     except Exception as e:
         logger.error(f"Error parsing code_interpreter_chunk: {e}", exc_info=True)
         raise OutputParserException(
-            f"Could not parse tool input: code_interpreter because "
-            f"the `arguments` is not valid JSON."
+            f"Could not parse tool input: code_interpreter because {e}"
         )

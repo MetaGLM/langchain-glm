@@ -12,7 +12,7 @@ from langchain_core.messages.tool import (
     ToolCall,
     ToolCallChunk,
     default_tool_chunk_parser,
-    default_tool_parser,
+    default_tool_parser, tool_call_chunk,
 )
 from langchain_core.pydantic_v1 import root_validator
 from langchain_core.utils._merge import merge_dicts, merge_lists
@@ -103,14 +103,37 @@ class ALLToolsMessageChunk(AIMessage, BaseMessageChunk):
 
     @root_validator(allow_reuse=True)
     def init_tool_calls(cls, values: dict) -> dict:
+
         if not values["tool_call_chunks"]:
-            values["tool_calls"] = []
-            values["invalid_tool_calls"] = []
+            if values["tool_calls"]:
+                values["tool_call_chunks"] = [
+                    tool_call_chunk(
+                        name=tc["name"],
+                        args=json.dumps(tc["args"]),
+                        id=tc["id"],
+                        index=None,
+                    )
+                    for tc in values["tool_calls"]
+                ]
+            if values["invalid_tool_calls"]:
+                tool_call_chunks = values.get("tool_call_chunks", [])
+                tool_call_chunks.extend(
+                    [
+                        tool_call_chunk(
+                            name=tc["name"], args=tc["args"], id=tc["id"], index=None
+                        )
+                        for tc in values["invalid_tool_calls"]
+                    ]
+                )
+                values["tool_call_chunks"] = tool_call_chunks
+
             return values
+
         tool_calls, invalid_tool_calls = _paser_chunk(values["tool_call_chunks"])
         values["tool_calls"] = tool_calls
         values["invalid_tool_calls"] = invalid_tool_calls
         return values
+
 
     def __add__(self, other: Any) -> BaseMessageChunk:  # type: ignore
         if isinstance(other, ALLToolsMessageChunk):

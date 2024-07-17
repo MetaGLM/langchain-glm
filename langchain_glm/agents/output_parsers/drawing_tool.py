@@ -134,6 +134,5 @@ def _paser_drawing_tool_chunk_input(
     except Exception as e:
         logger.error(f"Error parsing drawing_tool_chunk: {e}", exc_info=True)
         raise OutputParserException(
-            f"Could not parse tool input: drawing_tool because "
-            f"the `arguments` is not valid JSON."
+            f"Could not parse tool input: drawing_tool because  {e}"
         )

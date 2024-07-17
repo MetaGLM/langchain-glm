@@ -25,7 +25,7 @@ from langchain_glm.agents.output_parsers.web_browser import WebBrowserAgentActio
 
 
 def _create_tool_message(
-    agent_action: ToolAgentAction, observation: BaseToolOutput
+        agent_action: ToolAgentAction, observation: BaseToolOutput
 ) -> ToolMessage:
     """Convert agent action and observation into a function message.
     Args:
@@ -49,7 +49,7 @@ def _create_tool_message(
 
 
 def format_to_zhipuai_all_tool_messages(
-    intermediate_steps: Sequence[Tuple[AgentAction, BaseToolOutput]],
+        intermediate_steps: Sequence[Tuple[AgentAction, BaseToolOutput]],
 ) -> List[BaseMessage]:
     """Convert (AgentAction, tool output) tuples into FunctionMessages.
 
@@ -65,9 +65,17 @@ def format_to_zhipuai_all_tool_messages(
         if isinstance(agent_action, CodeInterpreterAgentAction):
             if isinstance(observation, CodeInterpreterToolOutput):
                 if "auto" == observation.platform_params.get("sandbox", "auto"):
-                    messages.append(AIMessage(content=str(observation)))
+                    new_messages = list(AIMessage(content=str(observation.code_input))) + [
+                        _create_tool_message(agent_action, observation)
+                    ]
+
+                    messages.extend([new for new in new_messages if new not in messages])
                 elif "none" == observation.platform_params.get("sandbox", "auto"):
-                    messages.append(_create_tool_message(agent_action, observation))
+                    new_messages = list(AIMessage(content=str(observation.code_input))) + [
+                        _create_tool_message(agent_action, observation)
+                    ]
+
+                    messages.extend([new for new in new_messages if new not in messages])
                 else:
                     raise ValueError(
                         f"Unknown sandbox type: {observation.platform_params.get('sandbox', 'auto')}"
@@ -77,26 +85,35 @@ def format_to_zhipuai_all_tool_messages(
 
         elif isinstance(agent_action, DrawingToolAgentAction):
             if isinstance(observation, DrawingToolOutput):
-                new_messages = list(agent_action.message_log) + [
-                    _create_tool_message(agent_action, observation)
-                ]
+                new_messages = list(AIMessage(content=str(observation)))
                 messages.extend([new for new in new_messages if new not in messages])
             else:
                 raise ValueError(f"Unknown observation type: {type(observation)}")
 
         elif isinstance(agent_action, WebBrowserAgentAction):
             if isinstance(observation, WebBrowserToolOutput):
-                new_messages = list(agent_action.message_log) + [
-                    _create_tool_message(agent_action, observation)
-                ]
+
+                new_messages = list(AIMessage(content=str(observation)))
                 messages.extend([new for new in new_messages if new not in messages])
             else:
                 raise ValueError(f"Unknown observation type: {type(observation)}")
 
         elif isinstance(agent_action, ToolAgentAction):
-            new_messages = list(agent_action.message_log) + [
-                _create_tool_message(agent_action, observation)
-            ]
+
+            # tool_calls = paser_ai_message_to_tool_calls(agent_action.message_log[0])
+            # function_tool_calls = [
+            #     tool_call
+            #     for tool_call in tool_calls
+            #     if tool_call["name"] not in AdapterAllToolStructType.__members__.values()
+            # ]
+            # function_tool_result_stack = _paser_function_chunk_input(
+            #     agent_action.message_log[0], function_tool_calls
+            # )
+
+            ai_msgs = AIMessage(
+                content=f"arguments='{agent_action.tool_input}', name='{agent_action.tool}'"
+            )
+            new_messages = [ai_msgs, _create_tool_message(agent_action, observation)]
             messages.extend([new for new in new_messages if new not in messages])
         else:
             messages.append(AIMessage(content=agent_action.log))

@@ -32,9 +32,9 @@ from langchain_glm.agents.output_parsers.drawing_tool import (
     _best_effort_parse_drawing_tool_tool_calls,
     _paser_drawing_tool_chunk_input,
 )
-from langchain_glm.agents.output_parsers.funcation import (
-    _paser_function_chunk_input,
-)
+
+from langchain_glm.agents.output_parsers.function import _best_effort_parse_function_tool_calls, \
+    _paser_function_chunk_input
 from langchain_glm.agents.output_parsers.web_browser import (
     _best_effort_parse_web_browser_tool_calls,
     _paser_web_browser_chunk_input,
@@ -44,18 +44,8 @@ from langchain_glm.chat_models.all_tools_message import ALLToolsMessageChunk
 logger = logging.getLogger(__name__)
 
 
-def parse_ai_message_to_tool_action(
-    message: BaseMessage,
-) -> Union[List[AgentAction], AgentFinish]:
-    """Parse an AI message potentially containing tool_calls."""
-    if not isinstance(message, AIMessage):
-        raise TypeError(f"Expected an AI message got {type(message)}")
-
-    # TODO: parse platform tools built-in @langchain_glm.agents.zhipuai_all_tools.base._get_assistants_tool
-    #   type in the future "function" or "code_interpreter"
-    #   for @ToolAgentAction from langchain.agents.output_parsers.tools
-    #   import with langchain.agents.format_scratchpad.tools.format_to_tool_messages
-    actions: List = []
+def paser_ai_message_to_tool_calls(message: BaseMessage, ):
+    tool_calls = []
     if message.tool_calls:
         tool_calls = message.tool_calls
     else:
@@ -64,7 +54,6 @@ def parse_ai_message_to_tool_action(
                 return_values={"output": message.content}, log=str(message.content)
             )
         # Best-effort parsing allready parsed tool calls
-        tool_calls = []
         for tool_call in message.additional_kwargs["tool_calls"]:
             if "function" == tool_call["type"]:
                 function = tool_call["function"]
@@ -94,6 +83,24 @@ def parse_ai_message_to_tool_action(
                     )
                 )
 
+    return tool_calls
+
+
+def parse_ai_message_to_tool_action(
+        message: BaseMessage,
+) -> Union[List[AgentAction], AgentFinish]:
+    """Parse an AI message potentially containing tool_calls."""
+    if not isinstance(message, AIMessage):
+        raise TypeError(f"Expected an AI message got {type(message)}")
+
+    # TODO: parse platform tools built-in @langchain_glm.agents.zhipuai_all_tools.base._get_assistants_tool
+    #   type in the future "function" or "code_interpreter"
+    #   for @ToolAgentAction from langchain.agents.output_parsers.tools
+    #   import with langchain.agents.format_scratchpad.tools.format_to_tool_messages
+    actions: List = []
+    tool_calls = paser_ai_message_to_tool_calls(message)
+    if isinstance(tool_calls, AgentFinish):
+        return tool_calls
     code_interpreter_action_result_stack: deque = deque()
     web_browser_action_result_stack: deque = deque()
     drawing_tool_result_stack: deque = deque()
@@ -150,18 +157,14 @@ def parse_ai_message_to_tool_action(
 
     # TODO: parse platform tools built-in @langchain_glm
     # delete AdapterAllToolStructType from tool_calls
-    function_tool_calls = [
-        tool_call
-        for tool_call in tool_calls
-        if tool_call["name"] not in AdapterAllToolStructType.__members__.values()
-    ]
+    function_tool_chunk = _best_effort_parse_function_tool_calls(tool_calls)
 
     function_tool_result_stack = _paser_function_chunk_input(
-        message, function_tool_calls
+        message, function_tool_chunk
     )
 
     if isinstance(message, ALLToolsMessageChunk):
-        call_chunks = _paser_object_positions(message.tool_call_chunks)
+        call_chunks = _paser_object_positions(tool_calls)
 
         for too_call_name in call_chunks:
             if too_call_name == AdapterAllToolStructType.CODE_INTERPRETER:

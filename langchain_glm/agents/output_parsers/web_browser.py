@@ -131,6 +131,5 @@ def _paser_web_browser_chunk_input(
     except Exception as e:
         logger.error(f"Error parsing web_browser_chunk: {e}", exc_info=True)
         raise OutputParserException(
-            f"Could not parse tool input: web_browser because "
-            f"the `arguments` is not valid JSON."
+            f"Could not parse tool input: web_browser {e} "
         )

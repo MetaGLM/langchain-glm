@@ -20,16 +20,36 @@ logger = logging.getLogger(__name__)
 
 class CodeInterpreterToolOutput(BaseToolOutput):
     platform_params: Dict[str, Any]
+    tool: str
+    code_input: str
+    code_output: str
 
     def __init__(
         self,
-        data: Any,
+        tool: str,
+        code_input: str,
+        code_output: str,
         platform_params: Dict[str, Any],
         **extras: Any,
     ) -> None:
+        data = CodeInterpreterToolOutput.paser_data(
+            tool=tool,
+            code_input=code_input,
+            code_output=code_output
+        )
         super().__init__(data, "", "", **extras)
         self.platform_params = platform_params
+        self.tool = tool
+        self.code_input = code_input
+        self.code_input = code_input
 
+    @staticmethod
+    def paser_data(
+            tool: str,
+            code_input: str,
+            code_output: str
+    ) -> str:
+        return f"""Access：{tool}, Message: {code_input},{code_output}"""
 
 @dataclass
 class CodeInterpreterAllToolExecutor(AllToolExecutor):
@@ -50,7 +70,9 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
             out = tool.run(tool_input=code_input)
 
             return CodeInterpreterToolOutput(
-                data=f"""Access：code_interpreter,{tool.name}, Message: {code_input}\r\n{out}""",
+                tool=tool.name,
+                code_input=code_input,
+                code_output=out,
                 platform_params=platform_params,
             )
         except ImportError:
@@ -85,7 +107,9 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
                 )
 
         return CodeInterpreterToolOutput(
-            data=f"""Access：{tool}, Message: {tool_input},{log}""",
+            tool=tool,
+            code_input=tool_input,
+            code_output=log,
             platform_params=self.platform_params,
         )
 
@@ -112,7 +136,9 @@ class CodeInterpreterAllToolExecutor(AllToolExecutor):
                 )
 
         return CodeInterpreterToolOutput(
-            data=f"""Access：{tool}, Message: {tool_input},{log}""",
+            tool=tool,
+            code_input=tool_input,
+            code_output=log,
             platform_params=self.platform_params,
         )
 
